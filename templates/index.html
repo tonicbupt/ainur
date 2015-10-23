@@ -1,0 +1,76 @@
+{% extends './base.html' %}
+
+{% block title %}云平台{% endblock %}
+
+{%- block page_css %}
+<link rel="stylesheet" href="/static/css/public.css">
+<link rel="stylesheet" href="/static/css/index_guide.css" />
+{% endblock %}
+
+{%- block body %}
+<div class="container">
+    <div class="top clearfix">
+        <div class="logo">
+            <a href="#"><img src="/static/images/logo_black.jpg"></a>
+        </div>
+        <dl>
+            <dt class='clearfix' id="userInfo">
+                <h2><a href="#"><img src="/static/images/logo_cloud.png"></a></h2>
+                <h4>raoyi</h4>
+                <div id="arrow"></div>
+                </dt>
+            <dd>
+                <a href="#">用户中心</a>
+                <a href="/account/logout">注销</a>
+            </dd>
+        </dl>
+    </div>
+    <div class="main">
+        <dl class="main_title">
+            <dd class="title01">为你开启，自由之门</dd>
+            <dd class="title02">运筹帷幄之中，决胜千里之外</dd>
+            <dd class="title03">让故障无处遁形</dd>
+            <dd class="title04">个人信息管理</dd>
+            <dd class="title05">运维树用户管理</dd>
+        </dl>
+        <ul class="main_list">
+            <li>
+                <a href="/deploy/"><img src="/static/images/cloudArrange.png">
+                    <h3>云部署</h3></a>
+            </li>
+            <li>
+                <a href="#"><img src="/static/images/businessMonitor.png">
+                    <h3>监控系统</h3></a>
+            </li>
+            <li>
+                <a href="#"><img src="/static/images/basicMonitor.png">
+                    <h3>告警系统</h3></a>
+            </li>
+            <li>
+                <a href="#"><img src="/static/images/personalCenter.png">
+                    <h3>个人中心</h3></a>
+            </li>
+            <li>
+                <a href="#"><img src="/static/images/systermSetting.png">
+                    <h3>系统设置</h3></a>
+            </li>
+        </ul>
+    </div>
+</div>
+{% endblock %}
+
+{% block page_js %}
+<script type="text/javascript">
+    $(document).ready(function() {
+        $("#userInfo").click(function() {
+            $(".top dd").slideToggle();
+            $("#userInfo #arrow").toggleClass("up");
+        });
+        $(".main_list li").mouseenter(function() {
+            var index = $(this).index();
+            $(".main_title dd").hide();
+            $($(".main_title dd").get(index)).fadeIn();
+        });
+    });
+</script>
+{% endblock %}

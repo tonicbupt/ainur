@@ -1,0 +1,19 @@
+<div class="panel panel-default content-margin-top">
+    <div class="panel-heading">
+        <ul class="breadcrumb">
+            <li><a ui-sref="projectIndex">项目列表</a>
+            </li>
+            <li class="active">新建项目</li>
+        </ul>
+    </div>
+    <div class="panel-body">
+        <form name="projectNewForm" class="form-horizontal">
+            <ng-include src="'projects/_form.html'"></ng-include>
+            <div class="form-group">
+                <div class="col-sm-offset-1 col-sm-10">
+                    <button type="button" class="btn btn-primary" ng-click="projectNewSave()" validation-submit="projectNewForm" ng-disabled="loadStatus.saving">保存</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>

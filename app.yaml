@@ -1,0 +1,7 @@
+appname: "ainur"
+entrypoints:
+    web:
+        cmd: "python web.py"
+        ports:
+            - "5000/tcp"
+build: "pip install -r requirements.txt"

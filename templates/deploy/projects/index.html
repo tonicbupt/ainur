@@ -1,0 +1,43 @@
+<div class="panel panel-default content-margin-top">
+    <div class="row clearfix">
+        <div class="panel-heading text-left" style="float:left;">
+            <a class="btn btn-default btn-dark" ui-sref="projectNew"><span class="glyphicon glyphicon-plus" aria-hidden="true"></span> 新建项目</a>
+        </div>
+
+        <div class="search_bar">
+            <input type="text" class="form-control" placeholder="search" ng-model="queryParams.name__icontains"
+            ng-keyup="$event.keyCode == 13 ? pageChanged() : null">
+            <button type="submit" class="" ng-click="pageChanged()"><span class="glyphicon glyphicon-search"></span>
+            </button>
+        </div>
+
+        <div class="select_bar">
+                <select ng-model="queryParams.group_id" ng-options="node[0] as node[1] for node in groups" class="form-control" ng-change="pageChanged()">
+                </select>
+        </div>
+    </div>
+
+    <table class="table table-bordered table-striped">
+        <tr>
+            <th>项目ID</th>
+            <th>服务</th>
+            <th>Git 版本</th>
+            <th>部门</th>
+            <th>类型</th>
+        </tr>
+
+        <tr ng-repeat="project in projects">
+            <td>{{ project.id }}</td>
+            <td>{{ project.name }}</td>
+            <td>{{ project.online_ver }}</td>
+            <td>{{ project.group.name }}</td>
+            <td>
+                <a ui-sref="sidebar.projectShow({projectId: project.id})" class="btn btn-default btn-xs"><span class="glyphicon glyphicon-th" aria-hidden="true"></span> 查看</a>
+                <a ui-sref="sidebar.projectVersionNew({projectId: project.id})" class="btn btn-default btn-xs"><span class="glyphicon glyphicon-plus" aria-hidden="true"></span> 新建镜像</a>
+                <a ui-sref="sidebar.projectVersionIndex({projectId: project.id})" class="btn btn-default btn-xs"><span class="glyphicon glyphicon-list" aria-hidden="true"></span> 版本列表</a>
+            </td>
+        </tr>
+    </table>
+</div>
+
+<ng-include src="'common/paging.html'"></ng-include>
