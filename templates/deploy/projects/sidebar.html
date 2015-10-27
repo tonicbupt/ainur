@@ -1,0 +1,31 @@
+<div class="row">
+    <div class="col-xs-2 tree-sidebar well">
+        <ul class="nav nav-pills nav-stacked">
+            <li role="presentation" ui-sref-active="active"><a ui-sref="projectIndex">项目列表</a>
+            </li>
+            <li role="presentation" ui-sref-active="active"><a ui-sref="sidebar.projectShow({projectId: projectId})">项目详情</a>
+            </li>
+            <li ng-init="versionIsCollapse=true"><a href="javascript:void(0)" ng-click="versionIsCollapse = !versionIsCollapse">项目构建</a>
+                <ul class="nav nav-pills nav-stacked nav-margin-left" collapse="versionIsCollapse">
+                    <li role="presentation" ui-sref-active="active"><a ui-sref="sidebar.projectVersionNew({projectId: projectId})">新建版本</a>
+                    </li>
+                    <li role="presentation" ui-sref-active="active"><a ui-sref="sidebar.projectVersionIndex({projectId: projectId})">版本列表</a>
+                    </li>
+                </ul>
+            </li>
+            <li ng-init="deployIsCollapse=true"><a href="javascript:void(0)" ng-click="deployIsCollapse = !deployIsCollapse">项目部署</a>
+                <ul class="nav nav-pills nav-stacked nav-margin-left" collapse="deployIsCollapse">
+                    <li role="presentation" ui-sref-active="active"><a ui-sref="sidebar.approvalSheetNew({projectId: projectId})">新建上线单</a>
+                    </li>
+                    <li role="presentation" ui-sref-active="active"><a ui-sref="sidebar.approvalSheetIndex({projectId: projectId})">上线单列表</a>
+                    </li>
+                </ul>
+            </li>
+            <li role="presentation" ui-sref-active="active"><a ui-sref="sidebar.projectLog({projectId: projectId})">操作日志</a>
+            </li>
+        </ul>
+    </div>
+    <div class="col-xs-10 right-tag">
+        <div ui-view></div>
+    </div>
+</div>

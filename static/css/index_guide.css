@@ -1,0 +1,74 @@
+@charset "utf-8";
+body{background:#fff;font-family:Microsoft YaHei,"微软雅黑","宋体",sans-serif;font-size:14px;}
+.container{width:1000px;margin:0 auto;}
+.top{padding:30px 0;height:70px;}
+.top .logo{float: left;}
+.top dl{float:right;position: relative;}
+.top dt{color: #333;margin-bottom:10px;margin-top: 10px;}
+.top dt h2{float: left;margin:-15px 30px 0 0;}
+.top dt h2 img{width:50px;height: auto;}
+
+.top dt h4{float:left;}
+.top dd{background: #828185;padding:10px 15px;display: none;position:absolute;right:0;top:30px;width:60px;}
+.top dd.current{display:block;}
+.top dd a{display: block;color: #fff;padding:3px 0;}
+.top dd a:hover{color: #333;}
+
+
+
+.main{padding:30px 0;}
+.main h4{font-family: Arial,sans-serif;font-size: 16px;font-weight: bold;}
+
+.main_title{height: 30px;}
+.main_title dd{color: #333;font-size: 14px;display: none;font-weight: bold;}
+.main_title .title01{margin-left: 30px;}
+.main_title .title02{margin-left: 200px;}
+.main_title .title03{margin-left: 420px;}
+.main_title .title04{margin-left: 630px;}
+.main_title .title05{margin-left: 820px;}
+
+.main_list li{float: left;}
+.main_list li a{display:block;margin:0 15px;}
+.main_list li img{display:block;height:160px;width:auto;}
+.main_list li a:hover img{
+	filter:alpha(opacity=50);
+	-moz-opacity:0.5; 
+	-khtml-opacity:0.5; 
+	opacity: 0.5;
+}
+.main_list li h3{text-align: center;line-height:30px;color:#333;}
+/*.main_list li span{display:block;border-radius:10px 10px 0 0;background:#627e7e;text-align: center;height: 100px;font-size:70px;vertical-align: middle;}*/
+/*.main_list li h3{display:block;border-radius:0 0 10px 10px;background:#5a7373;text-align:center;padding:10px 0;color:#fff;}*/
+.main_list02 li{margin: 0 15px;}
+.main_list02 li h3{font-size:14px;display:block;text-align:center;padding:10px 0;color:#333;margin: 0 15px;font-weight: bold;}
+
+
+#arrow{
+	float:left;
+	margin:7px 0 0 5px;
+	width: 0px;
+	height: 0px;
+	border-left: 7px solid transparent;
+	border-right: 7px solid transparent;
+	border-bottom:7px solid transparent;
+	border-top: 7px solid #333;
+	font-size: 0px;
+	line-height: 0px;
+}
+
+#arrow.up{
+	margin:-1px 0 0 5px;
+	width: 0px;
+	height: 0px;
+	border-left: 7px solid transparent;
+	border-right: 7px solid transparent;
+	border-top:7px solid transparent;
+	border-bottom: 7px solid #333;
+	font-size: 0px;
+	line-height: 0px;
+}
+
+.process{padding-top:30px;}
+.process h4{font-size:21px;color: #333;line-height:35px;font-weight: bold;}
+.process dt{font-size: 16px;color: #666;line-height: 41px;}
+.process dd{display: list-item;font-size: 16px;color: #666;line-height: 26px;list-style-type:disc;margin-left:25px;}

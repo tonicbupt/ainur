@@ -1,0 +1,4 @@
+Flask==0.10.1
+requests==2.4.3
+pyapi-gitlab==7.5.2
+eru-py
