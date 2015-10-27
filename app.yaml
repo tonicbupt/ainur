@@ -4,4 +4,4 @@ entrypoints:
         cmd: "python web.py"
         ports:
             - "5000/tcp"
-build: "pip install -r requirements.txt"
+build: "pip install -r req.txt"

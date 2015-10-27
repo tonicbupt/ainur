@@ -1,6 +1,6 @@
 import os
 from cStringIO import StringIO
-from flask import Flask
+from flask import Flask, g, request
 from werkzeug.utils import import_string
 
 from utils import paginator_kwargs
@@ -45,5 +45,12 @@ def create_app():
 
     for fl in (max, min, paginator_kwargs):
         app.add_template_global(fl)
+
+    @app.before_request
+    def init_global_vars():
+        g.page = request.args.get('page', type=int, default=0)
+        g.start = request.args.get('start', type=int, default=0)
+        g.limit = request.args.get('limit', type=int, default=20)
+
 
     return app

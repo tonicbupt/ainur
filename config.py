@@ -7,6 +7,7 @@ ERU_URL = os.getenv('ERU_URL', None)
 DEBUG = int(os.getenv('DEBUG', 0))
 PERMDIR = os.getenv('ERU_PERMDIR', tempfile.gettempdir())
 GITLAB_TOKEN = os.getenv('GITLAB_TOKEN', None)
+GITLAB_DOMAIN = os.getenv('GITLAB_DOMAIN', 'git.hunantv.com')
 
 LOG_LEVEL = getattr(logging, os.getenv('LOG_LEVEL', 'info').upper())
 LOG_FILE = os.getenv('LOG_FILE', '')

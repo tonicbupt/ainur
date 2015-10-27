@@ -5,11 +5,15 @@ import calendar
 import urllib2
 import flask
 import werkzeug.exceptions
+
 from cgi import parse_qs
 from eruhttp import EruException
 from datetime import datetime
 from functools import wraps
 from flask import request, Response
+from urlparse import urlparse
+
+from config import GITLAB_DOMAIN
 
 
 def paginator_kwargs(kw):
@@ -20,7 +24,7 @@ def paginator_kwargs(kw):
 
 
 def urlencode(text):
-    return urllib2.quote(text.encode('utf8')).replace('/', '%2F')
+    return urllib2.quote(text.encode('utf8'), safe='')
 
 
 def tojson(obj):
@@ -106,3 +110,16 @@ def json_api(f):
                 {'reason': 'unexpected', 'msg': e.message}, 500)
         return json_result(r, 400)
     return g
+
+
+def parse_git_url(url):
+    if url.startswith('http://' + GITLAB_DOMAIN):
+        r = urlparse(url)
+        r = r.path[1:]
+        r = r[:-4] if r.endswith('.git') else r
+        return urlencode(r)
+    elif url.startswith('git@' + GITLAB_DOMAIN):
+        r = url.split(':')[1][:-4]
+        return urlencode(r)
+
+    raise ValueError('Invalid url for git repository')
