@@ -1,0 +1,74 @@
+{% extends './deploy/base.html' %}
+
+{% block main_view %}
+<div class="panel panel-default content-margin-top">
+    <div class="panel-heading">
+        <ul class="breadcrumb">
+            <li><a href='/deploy/'>项目列表</a></li>
+            <li><a href='/deploy/projects/detail/{{ project.name|e }}'>{{ project.name|e }}</a></li>
+            <li><a href='/deploy/projects/images/{{ project.name|e }}'>任务</a></li>
+            <li class="active">构建镜像</li>
+        </ul>
+    </div>
+    <div class="panel-body">
+        <form class="form-horizontal form-submit" data-url='/deploy/api/projects/build_image' data-method='POST'>
+            <div class="form-group">
+                <label for="input-ip" class="col-sm-1 control-label">项目名称</label>
+                <div class="col-sm-10">
+                    <input type="text" name='project' class="form-control" readonly="readonly" value='{{ project.name|e }}'>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="input-ip" class="col-sm-1 control-label">版本引用</label>
+                <div class="col-sm-10">
+                    <select name='revision'>
+                    {% for r in revisions %}
+                        <option value='{{ r.id }}'>{{ r.id[:7] }} - {{ r.message }}</option>
+                    {% endfor %}
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="input-ip" class="col-sm-1 control-label">基础镜像</label>
+                <div class="col-sm-10">
+                    <select name='image'>
+                    {% for i in base_images %}
+                        <option value='{{ i }}'>{{ i }}</option>
+                    {% endfor %}
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="input-ip" class="col-sm-1 control-label">机器组</label>
+                <div class="col-sm-10">
+                    <select name='pod'>
+                    {% for p in pods %}
+                        <option value='{{ p.name }}'>{{ p.name }}</option>
+                    {% endfor %}
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <div class="col-sm-offset-1 col-sm-11">
+                    <button type="button" class="btn btn-primary submitter" id='buildImage'>构建</button>
+                </div>
+            </div>
+            <div class='error-reason'></div>
+            <div class='error-detail'></div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block page_js %}
+<script src='/static/js/deploy/submit.js'></script>
+<script>
+$('#buildImage')[0].success = function() {
+    window.location = '/deploy/projects/images/{{ project.name|e }}';
+}
+</script>
+{% endblock %}

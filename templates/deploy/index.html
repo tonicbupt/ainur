@@ -1,0 +1,32 @@
+{% extends './deploy/base.html' %}
+
+{% block main_view %}
+<div class="panel panel-default content-margin-top">
+    <div class="row clearfix">
+        <div class="panel-heading text-left" style="float:left;">
+            <a class="btn btn-default btn-dark" href='/deploy/projects/new'><span class="glyphicon glyphicon-plus" aria-hidden="true"></span> 新建项目</a>
+        </div>
+    </div>
+
+    <table class="table table-bordered table-striped">
+        <tr>
+            <th>项目ID</th>
+            <th>名称</th>
+            <th>Git 地址</th>
+            <th>操作</th>
+        </tr>
+        {% for project in projects %}
+        <tr>
+            <td>{{ project.id }}</td>
+            <td>{{ project.name }}</td>
+            <td>{{ project.git }}</td>
+            <td>
+                <a href='/deploy/projects/detail/{{ project.name|e }}' class="btn btn-default btn-xs"><span class="glyphicon glyphicon-th" aria-hidden="true"></span> 查看</a>
+                <a href='/deploy/projects/build_image/{{ project.name|e }}' class="btn btn-default btn-xs"><span class="glyphicon glyphicon-plus" aria-hidden="true"></span> 新建镜像</a>
+                <a href='/deploy/projects/images/{{ project.name|e }}' class="btn btn-default btn-xs"><span class="glyphicon glyphicon-list" aria-hidden="true"></span> 任务列表</a>
+            </td>
+        </tr>
+        {% endfor %}
+    </table>
+</div>
+{% endblock %}
