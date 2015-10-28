@@ -1,0 +1,88 @@
+{% extends './deploy/base.html' %}
+
+{% block main_view %}
+<div class="panel panel-default content-margin-top">
+    <div class="panel-heading">
+        <ul class="breadcrumb">
+            <li><a href='/deploy/'>项目列表</a></li>
+            <li><a href='/deploy/projects/detail/{{ project_name|e }}'>{{ project_name|e }}</a></li>
+            <li><a href='/deploy/projects/containers/{{ project_name|e }}'>镜像</a></li>
+            <li class="active">构建镜像</li>
+        </ul>
+    </div>
+    <div class="panel-body">
+        <form class="form-horizontal form-submit" data-url='/deploy/api/projects/deploy_container' data-method='POST'>
+            <div class="form-group">
+                <label for="input-ip" class="col-sm-1 control-label">项目名称</label>
+                <div class="col-sm-10">
+                    <input type="text" name='project' class="form-control" readonly="readonly" value='{{ project_name|e }}'>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="input-ip" class="col-sm-1 control-label">镜像版本</label>
+                <div class="col-sm-10">
+                    <select name='image'>
+                    {% for i in images %}
+                        <option value='{{ i }}'>{{ i }}</option>
+                    {% endfor %}
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="input-ip" class="col-sm-1 control-label">机器组</label>
+                <div class="col-sm-10">
+                    <select name='pod'>
+                    {% for p in pods %}
+                        <option value='{{ p.name }}'>{{ p.name }}</option>
+                    {% endfor %}
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="input-ip" class="col-sm-1 control-label">环境</label>
+                <div class="col-sm-10">
+                    <select name='env'>
+                    {% for e in envs %}
+                        <option value='{{ e|e }}'>{{ e|e }}</option>
+                    {% endfor %}
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="input-ip" class="col-sm-1 control-label">容器个数</label>
+                <div class="col-sm-10">
+                    <input type="text" name='ncontainer' class="form-control" value='1'>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="input-ip" class="col-sm-1 control-label">独占 CPU 个数</label>
+                <div class="col-sm-10">
+                    <input type="text" name='ncore' class="form-control" value='1'>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <div class="col-sm-offset-1 col-sm-11">
+                    <button type="button" class="btn btn-primary submitter" id='deployContainer'>上线</button>
+                </div>
+            </div>
+            <div class='error-reason'></div>
+            <div class='error-detail'></div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block page_js %}
+<script src='/static/js/deploy/submit.js'></script>
+<script>
+$('#deployContainer')[0].success = function() {
+    window.location = '/deploy/projects/containers/{{ project_name|e }}';
+}
+</script>
+{% endblock %}
