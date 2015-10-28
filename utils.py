@@ -59,7 +59,7 @@ def post_json():
     return json.loads(post_body_text())
 
 
-def form():
+def post_form():
     try:
         return {k: unicode(strip_irregular_space(v[0]), 'utf-8')
                 for k, v in parse_qs(post_body()).iteritems()}
@@ -118,7 +118,7 @@ def parse_git_url(url):
         r = r.path[1:]
         r = r[:-4] if r.endswith('.git') else r
         return urlencode(r)
-    elif url.startswith('git@' + GITLAB_DOMAIN):
+    if url.startswith('git@' + GITLAB_DOMAIN):
         r = url.split(':')[1][:-4]
         return urlencode(r)
 

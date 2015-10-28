@@ -1,0 +1,34 @@
+{% extends './deploy/base.html' %}
+
+{% block main_view %}
+<div class="panel panel-default content-margin-top">
+    <div class="panel-heading panel-heading02">
+        <ul class="breadcrumb">
+            <li><a href='/deploy/'>项目列表</a></li>
+            <li><a href='/deploy/projects/detail/{{ project_name|e }}'>{{ project_name|e }}</a></li>
+            <li class="active">任务列表</a></li></li>
+        </ul>
+    </div>
+    <table class="table table-bordered table-striped">
+        <tr>
+            <th class="col-xs-2">ID</th>
+            <th>动作</th>
+            <th>镜像版本</th>
+            <th>状态</th>
+            <th>开始时间</th>
+            <th>结束时间</th>
+        </tr>
+
+        {% for task in tasks %}
+        <tr>
+            <td>{{ task.id }}</td>
+            <td>{{ task.action }}</td>
+            <td>{{ task.version }}</td>
+            <td>{{ task.result }}</td>
+            <td>{{ task.created }}</td>
+            <td>{{ task.finished }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+</div>
+{% endblock %}
