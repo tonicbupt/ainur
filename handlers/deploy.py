@@ -245,3 +245,27 @@ def set_project_env():
             raise ValueError('invalid env item %s at line %d' % (i, line + 1))
         content[kv[0].strip()] = kv[1].strip()
     eru.set_app_env(project, env, **content)
+
+
+@bp.route('/api/containers/stop', methods=['POST'])
+@json_api
+def stop_container():
+    cid = post_form()['id']
+    logging.info('Stop container %s', cid)
+    eru.stop_container(cid)
+
+
+@bp.route('/api/containers/start', methods=['POST'])
+@json_api
+def start_container():
+    cid = post_form()['id']
+    logging.info('Start container %s', cid)
+    eru.start_container(cid)
+
+
+@bp.route('/api/containers/remove', methods=['POST'])
+@json_api
+def rm_container():
+    cid = post_form()['id']
+    logging.info('Remove container %s', cid)
+    eru.remove_containers([cid])
