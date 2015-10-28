@@ -26,6 +26,23 @@ def _get_project_commits(repo_url):
     return gitlab.getrepositorycommits(int(project['id']))
 
 
+def _register_app(repo_url, commit_id=None):
+    project = _get_project(repo_url)
+    logging.debug('Get app.yaml for %s:%s', project['id'],
+                  project['name_with_namespace'])
+    if commit_id is None:
+        commit_id = 'master'
+    appyaml = gitlab.getrawfile(project['id'], commit_id, 'app.yaml')
+    if not appyaml:
+        raise ValueError('no app.yaml in %s' % project['name_with_namespace'])
+    appconfig = yaml.load(appyaml)
+    logging.debug('Loaded app.yaml for %s / %s', appconfig['appname'], appyaml)
+    logging.info('Register app=%s commit=%s repo=%s', appconfig['appname'],
+                 commit_id, repo_url)
+    eru.register_app_version(commit_id, repo_url, '', appconfig)
+    return appconfig
+
+
 @bp.route('/')
 def deploy():
     return render_template('deploy/index.html', projects=eru.list_apps())
@@ -59,6 +76,42 @@ def project_build_image_entry(project_name):
                      'ubuntu:pywebstd-2015.09.18'])
 
 
+@bp.route('/projects/envs/<project_name>')
+def project_environments(project_name):
+    return render_template(
+        'deploy/projects/envs.html',
+        envs=eru.list_app_env_names(project_name)['data'],
+        project_name=project_name)
+
+
+@bp.route('/projects/envs/<project_name>/<env_name>')
+def project_env_detail(project_name, env_name):
+    return render_template(
+        'deploy/projects/env_detail.html',
+        env_content=eru.list_app_env_content(project_name, env_name)['data'],
+        project_name=project_name, env_name=env_name)
+
+
+@bp.route('/projects/containers/<project_name>')
+def project_containers(project_name):
+    return render_template(
+        'deploy/projects/containers.html',
+        containers=eru.list_app_containers(project_name)['containers'],
+        project_name=project_name)
+
+
+@bp.route('/projects/deploy_container/<project_name>')
+def project_deploy_container(project_name):
+    # TODO list_group_pods default 'platform'
+    # TODO list images
+    return render_template(
+        'deploy/projects/deploy_container.html',
+        images=[],
+        envs=eru.list_app_env_names(project_name)['data'],
+        pods=eru.list_group_pods('platform'),
+        project_name=project_name)
+
+
 @bp.route('/api/groups')
 @json_api
 def deploy_groups():
@@ -88,19 +141,7 @@ def deploy_projects():
 @json_api
 def register_project():
     args = post_form()
-    repo_url = args['repo_url']
-    project = _get_project(repo_url)
-    logging.debug('Get app.yaml for %s:%s', project['id'],
-                  project['name_with_namespace'])
-    appyaml = gitlab.getrawfile(project['id'], 'master', 'app.yaml')
-    if not appyaml:
-        raise ValueError('no app.yaml in repository')
-    appconfig = yaml.load(appyaml)
-
-    commit_id = gitlab.getrepositorycommit(project['id'], 'master')['id']
-    logging.debug('Loaded app.yaml for %s / %s', appconfig['appname'], appyaml)
-    eru.register_app_version(commit_id, repo_url, '', appconfig)
-    return ''
+    _register_app(args['repo_url'])
 
 
 @bp.route('/api/pods')
@@ -164,14 +205,13 @@ def project_build_image():
     logging.info('To build image project=%s revision=%s pod=%s image=%s',
                  args['project'], args['revision'], args['pod'], args['image'])
     app = eru.get_app(args['project'])
+    revision = args['revision']
+    _register_app(app['git'], revision)
     project = _get_project(app['git'])
-
     # TODO 这个 group 似乎不是这个吧...
     group = project['name_with_namespace'].split('/')[0].strip()
     pod = args['pod']
-    revision = args['revision']
     image = 'docker-registry.intra.hunantv.com/nbeimage/%s' % args['image']
-
     logging.info('Start building group=%s pod=%s app=%s image=%s rev=%s',
                  group, pod, app['name'], image, revision)
     return eru.build_image(group, pod, app['name'], image, revision)
@@ -188,3 +228,20 @@ def get_containers():
     if version:
         return eru.list_version_containers(appname, version, g.start, g.limit)
     return eru.list_app_containers(appname, g.start, g.limit)
+
+
+@bp.route('/api/projects/save_env', methods=['POST'])
+@json_api
+def set_project_env():
+    args = post_form()
+    project = args['project']
+    env = args['env']
+    content = {}
+    for line, i in enumerate(args['content'].split('\n')):
+        if len(i.strip()) == 0:
+            continue
+        kv = i.split('=', 1)
+        if len(kv) == 1:
+            raise ValueError('invalid env item %s at line %d' % (i, line + 1))
+        content[kv[0].strip()] = kv[1].strip()
+    eru.set_app_env(project, env, **content)

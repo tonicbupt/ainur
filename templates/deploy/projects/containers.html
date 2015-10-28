@@ -1,0 +1,42 @@
+{% extends './deploy/base.html' %}
+
+{% block main_view %}
+<div class="panel panel-default content-margin-top">
+    <div class="panel-heading panel-heading02">
+        <ul class="breadcrumb">
+            <li><a href='/deploy/'>项目列表</a></li>
+            <li><a href='/deploy/projects/detail/{{ project_name|e }}'>{{ project_name|e }}</a></li>
+            <li class="active">容器列表</a></li></li>
+        </ul>
+    </div>
+    <table class="table table-bordered table-striped">
+        <tr>
+            <th class="col-xs-2">ID</th>
+            <th>入口</th>
+            <th>环境</th>
+            <th>活跃</th>
+            <th>上线时间</th>
+            <th>主机</th>
+            <th>CPU 独占</th>
+            <th>内存使用</th>
+        </tr>
+
+        {% for c in containers %}
+        <tr>
+            <td>{{ c.id }}</td>
+            <td>{{ c.entrypoint|e }}</td>
+            <td>{{ c.env|e }}</td>
+            <td>{{ '是' if c.is_alive else '否' }}</td>
+            <td>{{ c.created }}</td>
+            <td>{{ c.host }}</td>
+            <td>
+                {%- for cr in c.cores.full if c.cores.full %}
+                    #{{ cr }}
+                {% endfor %}
+            </td>
+            <td>{{ c.memory|filesizeformat }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+</div>
+{% endblock %}
