@@ -9,7 +9,6 @@ from utils import json_api, post_form, parse_git_url
 from clients import gitlab, eru
 from .ext import rds, safe_rds_get, safe_rds_set
 
-
 bp = Blueprint('deploy', __name__, url_prefix='/deploy')
 
 
@@ -34,7 +33,21 @@ def _get_project(repo_url):
 
 def _get_project_commits(repo_url):
     project = _get_project(repo_url)
-    return gitlab.getrepositorycommits(project['id'])
+    return gitlab.getrepositorycommits(project['id'], page=0)
+
+
+def _get_rev_appyaml(project_id, commit_id):
+    rds_key = 'appyaml:%s:%s' % (project_id, commit_id[:7])
+    appyaml = safe_rds_get(rds_key)
+    if appyaml is not None:
+        logging.debug('Hit appyaml cache %s/%s', project_id, commit_id)
+        return appyaml
+    appyaml = gitlab.getrawfile(project_id, commit_id, 'app.yaml')
+    if not appyaml:
+        raise ValueError('no app.yaml in %s' % project_id)
+    appyaml = yaml.load(appyaml)
+    safe_rds_set(rds_key, appyaml)
+    return appyaml
 
 
 def _register_app(repo_url, commit_id=None):
@@ -42,12 +55,10 @@ def _register_app(repo_url, commit_id=None):
     logging.debug('Get app.yaml for %s:%s', project['id'],
                   project['name_with_namespace'])
     if commit_id is None:
-        commit_id = 'master'
-    appyaml = gitlab.getrawfile(project['id'], commit_id, 'app.yaml')
-    if not appyaml:
-        raise ValueError('no app.yaml in %s' % project['name_with_namespace'])
-    appconfig = yaml.load(appyaml)
-    logging.debug('Loaded app.yaml for %s / %s', appconfig['appname'], appyaml)
+        commit_id = g.getrepositorycommits(project['id'], ref_name='master',
+                                           page=0, per_page=1)['id']
+    appconfig = _get_rev_appyaml(project['id'], commit_id)
+    logging.debug('Loaded app.yaml for %s', appconfig['appname'])
     logging.info('Register app=%s commit=%s repo=%s', appconfig['appname'],
                  commit_id, repo_url)
     eru.register_app_version(commit_id, repo_url, '', appconfig)
@@ -121,36 +132,16 @@ def project_deploy_container(project_name):
     images = eru.list_app_images(project_name)
     image_names = [i['image_url'] for i in images]
     return render_template(
-        'deploy/projects/deploy_container.html',
-        images=image_names,
+        'deploy/projects/deploy_container.html', images=image_names,
         envs=eru.list_app_env_names(project_name)['data'],
-        pods=eru.list_group_pods('platform'),
-        project_name=project_name)
+        pods=eru.list_group_pods('platform'), project_name=project_name,
+        networks=eru.list_network())
 
 
 @bp.route('/api/groups')
 @json_api
 def deploy_groups():
     return [[g['id'], g['name']] for g in eru.list_groups()]
-
-
-@bp.route('/api/projects', methods=['GET'])
-@json_api
-def deploy_projects():
-    ''' Args:
-        * [group_id]
-        * [name_icontain]
-        * [page]
-    '''
-    return [{
-        'id': 0,
-        'name': 'ainur',
-        'repo_url': 'git@git.hunantv.com:platform/ainur.git',
-        'enable_ci': False,
-        'online_ver': '525bff4',
-        'group_id': 0,
-        'group': {'id': 0, 'name': 'Platform'},
-    }]
 
 
 @bp.route('/api/projects/register', methods=['POST'])
@@ -166,54 +157,6 @@ def list_pods():
     return [p['name'] for p in eru.list_pods()]
 
 
-@bp.route('/api/base_images')
-@json_api
-def base_iamges():
-    return ['ubuntu:binary-2015.09.06', 'ubuntu:python-2015.09.06',
-            'ubuntu:pywebstd-2015.09.18']
-
-
-@bp.route('/api/projects/<int:project_id>/git_refs')
-@json_api
-def project_git_refs(project_id):
-    commits = gitlab.getrepositorycommits(project_id) or []
-    return [{
-        'ref_type': 'branch',
-        'name': '%s - %s' % (c['id'][:7], c['title']),
-        'hexsha': c['id'],
-        'message': c['message'],
-    } for c in commits]
-
-
-@bp.route('/api/project_versions', methods=['GET'])
-@json_api
-def project_versions():
-    def format_versions(versions):
-        return [{
-            "id": v['id'],
-            "ref_name": "master",
-            "ref_hexsha1": v['sha'],
-            "version": v['sha'],
-            "status": 1,
-            "status_name": "----",
-            "project_id": 0,
-            "created_at": v['created'],
-        } for v in versions]
-
-    project_id = request.args.get('project_id', '')
-    page = request.args.get('page', default=1, type=int)
-
-    if not project_id:
-        raise ValueError('Need project_id')
-
-    project = gitlab.getproject(project_id)
-    if not project:
-        raise ValueError('Project not found %s' % project_id)
-
-    appname = project['name']
-    return format_versions(eru.list_app_versions(appname, (page - 1) * 40, 40)['versions'])
-
-
 @bp.route('/api/projects/build_image', methods=['POST'])
 @json_api
 def project_build_image():
@@ -225,12 +168,39 @@ def project_build_image():
     _register_app(app['git'], revision)
     project = _get_project(app['git'])
     # TODO 这个 group 似乎不是这个吧...
-    group = project['name_with_namespace'].split('/')[0].strip()
+    group = 'platform'
     pod = args['pod']
     image = 'docker-registry.intra.hunantv.com/nbeimage/%s' % args['image']
     logging.info('Start building group=%s pod=%s app=%s image=%s rev=%s',
                  group, pod, app['name'], image, revision)
     return eru.build_image(group, pod, app['name'], image, revision)
+
+
+@bp.route('/api/revision/list_entrypoints', methods=['GET'])
+@json_api
+def revision_list_entrypoints():
+    project = _get_project(eru.get_app(request.args['project'])['git'])
+    y = _get_rev_appyaml(project['id'], request.args['commit'])
+    return y['entrypoints'].keys()
+
+
+@bp.route('/api/projects/deploy_container', methods=['POST'])
+@json_api
+def project_deploy_container_api():
+    args = request.form
+    network = (args['network'] if isinstance(args['network'], list)
+               else [args['network']])
+    eru.deploy_private(
+        group_name='platform',
+        pod_name=args['pod'],
+        app_name=args['project'],
+        ncore=float(args['ncore']),
+        ncontainer=int(args['ncontainer']),
+        version=args['version'],
+        entrypoint=args['entrypoint'],
+        env=args['env'],
+        network_ids=args['network'],
+    )
 
 
 @bp.route('/api/containers', methods=['GET'])

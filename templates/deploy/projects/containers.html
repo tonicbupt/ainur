@@ -18,7 +18,7 @@
             <th>活跃</th>
             <th>上线时间</th>
             <th>主机</th>
-            <th>CPU 独占</th>
+            <th>CPU</th>
             <th>内存使用</th>
             <th>操作</th>
         </tr>
@@ -33,9 +33,15 @@
             <td>{{ c.created }}</td>
             <td>{{ c.host }}</td>
             <td>
+                独占
                 {%- for cr in c.cores.full if c.cores.full %}
                     #{{ cr }}
+                {% else %}
+                    (无)
                 {% endfor %}
+                {%- if c.cores.nshare %}
+                    | 共享 {{ c.cores.nshare }} #{{ c.cores.part[0] }}
+                {%- endif %}
             </td>
             <td>{{ c.memory|filesizeformat }}</td>
             <td>
