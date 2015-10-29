@@ -6,6 +6,10 @@
         <div class="panel-heading text-left" style="float:left;">
             <a class="btn btn-default btn-dark" href='/deploy/projects/new'><span class="glyphicon glyphicon-plus" aria-hidden="true"></span> 新建项目</a>
         </div>
+        <div class="search_bar">
+            <input type="text" id='projectName' class="form-control" placeholder="输入项目名字跳转">
+            <button id="toProject" class="glyphicon glyphicon-arrow-right"></span></button>
+        </div>
     </div>
 
     <table class="table table-bordered table-striped">
@@ -28,5 +32,19 @@
         </tr>
         {% endfor %}
     </table>
+
+    {% include 'common/pagination.html' %}
 </div>
+{% endblock %}
+
+{% block page_js %}
+<script>
+$('#toProject').click(function() {
+    var proj = $('#projectName').val().trim();
+    if (proj.length === 0) {
+        return;
+    }
+    window.location = '/deploy/projects/detail/' + proj;
+});
+</script>
 {% endblock %}

@@ -53,7 +53,7 @@ def create_app():
     @app.before_request
     def init_global_vars():
         g.page = request.args.get('page', type=int, default=0)
-        g.start = request.args.get('start', type=int, default=0)
+        g.start = request.args.get('start', type=int, default=g.page * 20)
         g.limit = request.args.get('limit', type=int, default=20)
 
     return app

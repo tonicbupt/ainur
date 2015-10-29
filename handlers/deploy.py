@@ -56,7 +56,8 @@ def _register_app(repo_url, commit_id=None):
 
 @bp.route('/')
 def deploy():
-    return render_template('deploy/index.html', projects=eru.list_apps())
+    return render_template('deploy/index.html', page=g.page,
+                           projects=eru.list_apps(g.start, g.limit))
 
 
 @bp.route('/projects/new')
@@ -72,9 +73,10 @@ def project_detail(project_name):
 
 @bp.route('/projects/images/<project_name>')
 def project_images_tasks(project_name):
-    return render_template('deploy/projects/images_tasks.html',
-                           tasks=eru.list_app_tasks(project_name)['tasks'],
-                           project_name=project_name)
+    return render_template(
+        'deploy/projects/images_tasks.html', page=g.page,
+        tasks=eru.list_app_tasks(project_name, g.start, g.limit)['tasks'],
+        project_name=project_name)
 
 
 @bp.route('/projects/build_image/<project_name>')
