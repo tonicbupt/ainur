@@ -12,6 +12,7 @@
     <table class="table table-bordered table-striped">
         <tr>
             <th class="col-xs-2">ID</th>
+            <th>镜像版本</th>
             <th>入口</th>
             <th>环境</th>
             <th>活跃</th>
@@ -19,11 +20,13 @@
             <th>主机</th>
             <th>CPU 独占</th>
             <th>内存使用</th>
+            <th>操作</th>
         </tr>
 
         {% for c in containers %}
         <tr>
-            <td>{{ c.id }}</td>
+            <td>{{ c.container_id[:17] }}</td>
+            <td>{{ c.version }}</td>
             <td>{{ c.entrypoint|e }}</td>
             <td>{{ c.env|e }}</td>
             <td>{{ '是' if c.is_alive else '否' }}</td>
@@ -35,8 +38,30 @@
                 {% endfor %}
             </td>
             <td>{{ c.memory|filesizeformat }}</td>
+            <td>
+                {% if c.is_alive %}
+                <button class='btn btn-warning btn-ctl' data-ctl='stop' data-container-id='{{ c.container_id }}'>下线</button>
+                {% else %}
+                <button class='btn btn-primary btn-ctl' data-ctl='start' data-container-id='{{ c.container_id }}'>上线</button>
+                {% endif %}
+                <button class='btn btn-danger btn-toggle-next'>删除</button>
+                <button class='btn btn-danger btn-ctl' data-ctl='remove' data-container-id='{{ c.container_id }}'>确认删除</button>
+            </td>
         </tr>
         {% endfor %}
     </table>
 </div>
+{% endblock %}
+
+{% block page_js %}
+<script>
+$('.btn-ctl').click(function() {
+    var btn = $(this).attr('disabled', 'disabled');
+    $.post('/deploy/api/containers/' + btn.data('ctl'), {id: btn.data('container-id')}, function() {
+        window.location.reload();
+    });
+});
+
+$('.btn-toggle-next').click(function() {$(this).next().toggle();}).next().hide();
+</script>
 {% endblock %}

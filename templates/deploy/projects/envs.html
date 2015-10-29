@@ -11,14 +11,34 @@
     </div>
     <table class="table table-bordered table-striped">
         <tr>
-            <th class="col-xs-2">名称</th>
+            <th class="col-xs-2">
+                <span>名称</span>
+                <span style='float: right'>
+                    新建环境
+                    <input type='text' id='new_env' style='width: 140px' placeholder='环境名称'>
+                    <button class='btn' id='new_env_btn'>新建</button>
+                </span>
+            </th>
         </tr>
 
+        <tbody id='envs'>
         {% for e in envs %}
-        <tr>
-            <td><a href='/deploy/projects/envs/{{ project_name|e }}/{{ e|e }}'>{{ e|e }}</a></td>
-        </tr>
+            <tr>
+                <td><a href='/deploy/projects/envs/{{ project_name|e }}/{{ e|e }}'>{{ e|e }}</a></td>
+            </tr>
         {% endfor %}
+        </tbody>
     </table>
 </div>
+{% endblock %}
+
+{% block page_js %}
+<script>
+$('#new_env_btn').click(function() {
+    var env = $('#new_env').val().trim();
+    if (env.length === 0) return;
+    $('#envs').append($('<tr>').append($('<td>').append(
+            $('<a>').attr('href', '/deploy/projects/envs/{{ project_name|e }}/' + env).text(env))));
+});
+</script>
 {% endblock %}

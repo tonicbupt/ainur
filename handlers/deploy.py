@@ -3,9 +3,11 @@
 import yaml
 import logging
 from flask import render_template, Blueprint, request, g
+from redis.exceptions import RedisError
 
 from utils import json_api, post_form, parse_git_url
 from clients import gitlab, eru
+from .ext import rds, safe_rds_get, safe_rds_set
 
 
 bp = Blueprint('deploy', __name__, url_prefix='/deploy')
@@ -15,9 +17,17 @@ def _get_project(repo_url):
     logging.debug('Get repo %s', repo_url)
     repo = parse_git_url(repo_url)
     logging.debug('Get project %s', repo)
+
+    rds_key = 'project:%s' % repo
+    project = safe_rds_get(rds_key)
+    if project is not None:
+        logging.debug('Hit project cache %s', repo)
+        return project
+
     project = gitlab.getproject(repo)
     if not project:
         raise ValueError('no such repository %s' % repo_url)
+    safe_rds_set(rds_key, project)
     return project
 
 
@@ -69,11 +79,13 @@ def project_images_tasks(project_name):
 @bp.route('/projects/build_image/<project_name>')
 def project_build_image_entry(project_name):
     app = eru.get_app(project_name)
-    return render_template(
-        'deploy/projects/build_image.html', project=app,
-        revisions=_get_project_commits(app['git']), pods=eru.list_pods(),
-        base_images=['ubuntu:binary-2015.09.06', 'ubuntu:python-2015.09.06',
-                     'ubuntu:pywebstd-2015.09.18'])
+    try:
+        return render_template(
+            'deploy/projects/build_image.html', project=app,
+            revisions=_get_project_commits(app['git']), pods=eru.list_pods(),
+            base_images=rds.lrange('base_images', 0, -1))
+    except RedisError as e:
+        return 'Unable to list base images, Redis is down: %s' % e, 500
 
 
 @bp.route('/projects/envs/<project_name>')
@@ -245,3 +257,27 @@ def set_project_env():
             raise ValueError('invalid env item %s at line %d' % (i, line + 1))
         content[kv[0].strip()] = kv[1].strip()
     eru.set_app_env(project, env, **content)
+
+
+@bp.route('/api/containers/stop', methods=['POST'])
+@json_api
+def stop_container():
+    cid = post_form()['id']
+    logging.info('Stop container %s', cid)
+    eru.stop_container(cid)
+
+
+@bp.route('/api/containers/start', methods=['POST'])
+@json_api
+def start_container():
+    cid = post_form()['id']
+    logging.info('Start container %s', cid)
+    eru.start_container(cid)
+
+
+@bp.route('/api/containers/remove', methods=['POST'])
+@json_api
+def rm_container():
+    cid = post_form()['id']
+    logging.info('Remove container %s', cid)
+    eru.remove_containers([cid])
