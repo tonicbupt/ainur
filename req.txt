@@ -1,5 +1,5 @@
 Flask==0.10.1
 flask-redis=0.1.0
 requests==2.4.3
-pyapi-gitlab==7.5.2
+pyapi-gitlab==7.8.5
 eru-py

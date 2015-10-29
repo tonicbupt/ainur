@@ -6,8 +6,8 @@
         <ul class="breadcrumb">
             <li><a href='/deploy/'>项目列表</a></li>
             <li><a href='/deploy/projects/detail/{{ project_name|e }}'>{{ project_name|e }}</a></li>
-            <li><a href='/deploy/projects/containers/{{ project_name|e }}'>镜像</a></li>
-            <li class="active">构建镜像</li>
+            <li><a href='/deploy/projects/containers/{{ project_name|e }}'>容器</a></li>
+            <li class="active">上线容器</li>
         </ul>
     </div>
     <div class="panel-body">
@@ -22,11 +22,18 @@
             <div class="form-group">
                 <label for="input-ip" class="col-sm-1 control-label">镜像版本</label>
                 <div class="col-sm-10">
-                    <select name='image'>
+                    <select name='version' id='select-version'>
                     {% for i in images %}
-                        <option value='{{ i }}'>{{ i }}</option>
+                        <option value='{{ i[-7:] }}'>{{ i[-7:] }}</option>
                     {% endfor %}
                     </select>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="input-ip" class="col-sm-1 control-label">程序入口</label>
+                <div class="col-sm-10">
+                    <select name='entrypoint' id='entrypoints'></select>
                 </div>
             </div>
 
@@ -53,6 +60,17 @@
             </div>
 
             <div class="form-group">
+                <label for="input-ip" class="col-sm-1 control-label">虚拟网卡绑定</label>
+                <div class="col-sm-10">
+                {% for nw in networks %}
+                    <div class="checkbox">
+                        <label><input name='network' type="checkbox" value="{{ nw.id }}">{{ nw.name|e }} - {{ nw.netspace }}</label>
+                    </div>
+                {% endfor %}
+                </div>
+            </div>
+
+            <div class="form-group">
                 <label for="input-ip" class="col-sm-1 control-label">容器个数</label>
                 <div class="col-sm-10">
                     <input type="text" name='ncontainer' class="form-control" value='1'>
@@ -71,8 +89,11 @@
                     <button type="button" class="btn btn-primary submitter" id='deployContainer'>上线</button>
                 </div>
             </div>
-            <div class='error-reason'></div>
-            <div class='error-detail'></div>
+
+            <div class="col-sm-offset-1 col-sm-11">
+                <div class='error-reason'></div>
+                <div class='error-detail'></div>
+            </div>
         </form>
     </div>
 </div>
@@ -84,5 +105,17 @@
 $('#deployContainer')[0].success = function() {
     window.location = '/deploy/projects/containers/{{ project_name|e }}';
 }
+
+$('#select-version').change(function() {
+    $.get('/deploy/api/revision/list_entrypoints', {
+        project: '{{ project_name|e }}',
+        commit: $(this).val()
+    }, function(r) {
+        var ep = $('#entrypoints').html('');
+        for (var i = 0; i < r.length; ++i) {
+            ep.append($('<option>').val(r[i]).text(r[i]));
+        }
+    });
+}).change();
 </script>
 {% endblock %}

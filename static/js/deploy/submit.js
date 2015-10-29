@@ -19,7 +19,10 @@ $(document).ready(function() {
                     var c = JSON.parse(r.responseText);
                     form.find('.error-reason').text('出错原因: ' + c.reason);
                     if (c.detail) {
-                        form.find('.error-detail').text('详细信息: ' + c.detail);
+                        form.find('.error-detail').append('详细信息: ' + c.detail);
+                    }
+                    if (c.missing) {
+                        form.find('.error-detail').append('缺少参数: ' + c.missing);
                     }
                 }
             });
