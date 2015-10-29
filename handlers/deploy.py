@@ -27,13 +27,14 @@ def _get_project(repo_url):
     project = gitlab.getproject(repo)
     if not project:
         raise ValueError('no such repository %s' % repo_url)
+
     safe_rds_set(rds_key, project)
     return project
 
 
 def _get_project_commits(repo_url):
     project = _get_project(repo_url)
-    return gitlab.getrepositorycommits(int(project['id']))
+    return gitlab.getrepositorycommits(project['id'])
 
 
 def _register_app(repo_url, commit_id=None):
@@ -115,10 +116,11 @@ def project_containers(project_name):
 @bp.route('/projects/deploy_container/<project_name>')
 def project_deploy_container(project_name):
     # TODO list_group_pods default 'platform'
-    # TODO list images
+    images = eru.list_app_images(project_name)
+    image_names = [i['image_url'] for i in images]
     return render_template(
         'deploy/projects/deploy_container.html',
-        images=[],
+        images=image_names,
         envs=eru.list_app_env_names(project_name)['data'],
         pods=eru.list_group_pods('platform'),
         project_name=project_name)
