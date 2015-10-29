@@ -6,6 +6,7 @@ from flask import render_template, Blueprint, request, g
 
 from utils import json_api, post_form, parse_git_url
 from clients import gitlab, eru
+from .ext import rds
 
 
 bp = Blueprint('deploy', __name__, url_prefix='/deploy')
@@ -72,8 +73,7 @@ def project_build_image_entry(project_name):
     return render_template(
         'deploy/projects/build_image.html', project=app,
         revisions=_get_project_commits(app['git']), pods=eru.list_pods(),
-        base_images=['ubuntu:binary-2015.09.06', 'ubuntu:python-2015.09.06',
-                     'ubuntu:pywebstd-2015.09.18'])
+        base_images=rds.lrange('base_images', 0, -1))
 
 
 @bp.route('/projects/envs/<project_name>')

@@ -9,6 +9,9 @@ PERMDIR = os.getenv('ERU_PERMDIR', tempfile.gettempdir())
 GITLAB_TOKEN = os.getenv('GITLAB_TOKEN', None)
 GITLAB_DOMAIN = os.getenv('GITLAB_DOMAIN', 'git.hunantv.com')
 
+REDIS_HOST = os.getenv('REDIS_HOST', 'localhost')
+REDIS_PORT = int(os.getenv('REDIS_HOST', 6379))
+
 LOG_LEVEL = getattr(logging, os.getenv('LOG_LEVEL', 'info').upper())
 LOG_FILE = os.getenv('LOG_FILE', '')
 LOG_FORMAT = os.getenv('LOG_FORMAT', '%(levelname)s:%(asctime)s:%(message)s')
