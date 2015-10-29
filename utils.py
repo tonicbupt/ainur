@@ -117,9 +117,9 @@ def parse_git_url(url):
         r = urlparse(url)
         r = r.path[1:]
         r = r[:-4] if r.endswith('.git') else r
-        return urlencode(r)
+        return r
     if url.startswith('git@' + GITLAB_DOMAIN):
         r = url.split(':')[1][:-4]
-        return urlencode(r)
+        return r
 
     raise ValueError('Invalid url for git repository')
