@@ -1,0 +1,50 @@
+<table class="table table-bordered table-striped">
+    <tr>
+        <th class="col-xs-2">ID</th>
+        <th>名称</th>
+        <th>镜像版本</th>
+        <th>入口</th>
+        <th>环境</th>
+        <th>活跃</th>
+        <th>上线时间</th>
+        <th>主机</th>
+        <th>CPU</th>
+        <th>内存使用</th>
+        <th>操作</th>
+    </tr>
+
+    {% for c in containers %}
+    <tr>
+        <td>{{ c.container_id[:17] }}</td>
+        <td>{{ c.name|e }}</td>
+        <td>{{ c.version }}</td>
+        <td>{{ c.entrypoint|e }}</td>
+        <td>{{ c.env|e }}</td>
+        <td>{{ '是' if c.is_alive else '否' }}</td>
+        <td>{{ c.created }}</td>
+        <td>{{ c.host }}</td>
+        <td>
+            独占
+            {%- for cr in c.cores.full if c.cores.full %}
+                #{{ cr }}
+            {% else %}
+                (无)
+            {% endfor %}
+            {%- if c.cores.nshare %}
+                | 共享 {{ c.cores.nshare }} #{{ c.cores.part[0] }}
+            {%- endif %}
+        </td>
+        <td>{{ c.memory|filesizeformat }}</td>
+        <td>
+            {% if c.is_alive %}
+            <button class='btn btn-warning btn-ctl' data-ctl='stop' data-container-id='{{ c.container_id }}'>下线</button>
+            {% else %}
+            <button class='btn btn-primary btn-ctl' data-ctl='start' data-container-id='{{ c.container_id }}'>上线</button>
+            {% endif %}
+            <button class='btn btn-danger btn-toggle-next'>删除</button>
+            <button class='btn btn-danger btn-ctl' data-ctl='remove' data-container-id='{{ c.container_id }}'>确认删除</button>
+        </td>
+    </tr>
+    {% endfor %}
+</table>
+
