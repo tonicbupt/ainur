@@ -5,7 +5,7 @@ import logging
 from flask import render_template, Blueprint, request, g
 from redis.exceptions import RedisError
 
-from utils import json_api, post_form, parse_git_url
+from utils import json_api, post_form, parse_git_url, not_found
 from clients import gitlab, eru
 from .ext import rds, safe_rds_get, safe_rds_set
 
@@ -55,8 +55,11 @@ def _register_app(repo_url, commit_id=None):
     logging.debug('Get app.yaml for %s:%s', project['id'],
                   project['name_with_namespace'])
     if commit_id is None:
-        commit_id = g.getrepositorycommits(project['id'], ref_name='master',
-                                           page=0, per_page=1)['id']
+        commits = gitlab.getrepositorycommits(project['id'], ref_name='master',
+                                              page=0, per_page=1)
+        if len(commits) == 0:
+            raise ValueError('Project %s has no commits' % repo_url)
+        commit_id = commits[0]['id']
     appconfig = _get_rev_appyaml(project['id'], commit_id)
     logging.debug('Loaded app.yaml for %s', appconfig['appname'])
     logging.info('Register app=%s commit=%s repo=%s', appconfig['appname'],
@@ -138,6 +141,31 @@ def project_deploy_container(project_name):
         networks=eru.list_network())
 
 
+@bp.route('/pods/')
+def pods_list():
+    return render_template('deploy/pods/index.html', page=g.page,
+                           pods=eru.list_pods(g.start, g.limit))
+
+
+@bp.route('/pods/<pod_name>/hosts/')
+def pod_hosts(pod_name):
+    return render_template(
+        'deploy/pods/hosts.html', page=g.page, pod_name=pod_name,
+        hosts=eru.list_pod_hosts(pod_name, g.start, g.limit))
+
+
+@bp.route('/hosts/<host_name>/containers/')
+def host_containers(host_name):
+    host = eru.get_host(host_name)
+    if host is None:
+        return not_found()
+    return render_template(
+        'deploy/pods/host_containers.html', page=g.page, host_name=host_name,
+        pod_name=eru.get_pod(host['pod_id'])['name'],
+        containers=eru.list_host_containers(
+            host_name, g.start, g.limit)['containers'])
+
+
 @bp.route('/api/groups')
 @json_api
 def deploy_groups():
@@ -148,7 +176,8 @@ def deploy_groups():
 @json_api
 def register_project():
     args = post_form()
-    _register_app(args['repo_url'])
+    app = _register_app(args['repo_url'])
+    return app['appname']
 
 
 @bp.route('/api/pods')

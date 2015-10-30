@@ -1,0 +1,20 @@
+{% extends './deploy/base.html' %}
+
+{% block main_view %}
+<div class="panel panel-default content-margin-top">
+    <div class="panel-heading panel-heading02">
+        <ul class="breadcrumb">
+            <li><a href='/deploy/pods/'>机器组</a></li>
+            <li><a href='/deploy/pods/{{ pod_name|e }}/hosts'>{{ pod_name|e }}</a></li>
+            <li class="active">{{ host_name|e }}</a></li></li>
+        </ul>
+    </div>
+
+    {% include 'deploy/common/containers_table.html' %}
+    {% include 'common/pagination.html' %}
+</div>
+{% endblock %}
+
+{% block page_js %}
+<script src='/static/js/common.js'></script>
+{% endblock %}

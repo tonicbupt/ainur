@@ -31,8 +31,8 @@
 {% block page_js %}
 <script src='/static/js/deploy/submit.js'></script>
 <script>
-$('#projectNewForm')[0].success = function() {
-    window.location = '/deploy/';
+$('#projectNewForm')[0].success = function(r) {
+    window.location = '/deploy/projects/detail/' + r;
 }
 </script>
 {% endblock %}
