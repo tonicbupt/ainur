@@ -11,8 +11,8 @@ $(document).ready(function() {
                 url: form.data('url'),
                 type: form.data('method') || 'GET',
                 data: form.serialize(),
-                success: function() {
-                    btn.removeAttr('disabled')[0].success();
+                success: function(r) {
+                    btn.removeAttr('disabled')[0].success(r);
                 },
                 error: function(r) {
                     btn.removeAttr('disabled');

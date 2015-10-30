@@ -55,8 +55,11 @@ def _register_app(repo_url, commit_id=None):
     logging.debug('Get app.yaml for %s:%s', project['id'],
                   project['name_with_namespace'])
     if commit_id is None:
-        commit_id = g.getrepositorycommits(project['id'], ref_name='master',
-                                           page=0, per_page=1)['id']
+        commits = gitlab.getrepositorycommits(project['id'], ref_name='master',
+                                              page=0, per_page=1)
+        if len(commits) == 0:
+            raise ValueError('Project %s has no commits' % repo_url)
+        commit_id = commits[0]['id']
     appconfig = _get_rev_appyaml(project['id'], commit_id)
     logging.debug('Loaded app.yaml for %s', appconfig['appname'])
     logging.info('Register app=%s commit=%s repo=%s', appconfig['appname'],
@@ -148,7 +151,8 @@ def deploy_groups():
 @json_api
 def register_project():
     args = post_form()
-    _register_app(args['repo_url'])
+    app = _register_app(args['repo_url'])
+    return app['appname']
 
 
 @bp.route('/api/pods')
