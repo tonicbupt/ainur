@@ -262,6 +262,12 @@ def set_project_env():
     eru.set_app_env(project, env, **content)
 
 
+@bp.route('/api/tasklog/<int:task_id>')
+@json_api
+def get_task_log(task_id):
+    return eru.get_task_log(task_id)
+
+
 @bp.route('/api/containers/stop', methods=['POST'])
 @json_api
 def stop_container():
