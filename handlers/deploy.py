@@ -5,7 +5,7 @@ import logging
 from flask import render_template, Blueprint, request, g
 from redis.exceptions import RedisError
 
-from utils import json_api, post_form, parse_git_url, not_found
+from utils import json_api, post_form, parse_git_url, not_found, demand_login
 from clients import gitlab, eru
 from .ext import rds, safe_rds_get, safe_rds_set
 
@@ -75,6 +75,7 @@ def deploy():
 
 
 @bp.route('/projects/new')
+@demand_login
 def projects_new():
     return render_template('deploy/projects/new.html')
 
@@ -94,6 +95,7 @@ def project_images_tasks(project_name):
 
 
 @bp.route('/projects/build_image/<project_name>')
+@demand_login
 def project_build_image_entry(project_name):
     app = eru.get_app(project_name)
     try:
@@ -114,6 +116,7 @@ def project_environments(project_name):
 
 
 @bp.route('/projects/envs/<project_name>/<env_name>')
+@demand_login
 def project_env_detail(project_name, env_name):
     return render_template(
         'deploy/projects/env_detail.html',
@@ -122,6 +125,7 @@ def project_env_detail(project_name, env_name):
 
 
 @bp.route('/projects/containers/<project_name>')
+@demand_login
 def project_containers(project_name):
     return render_template(
         'deploy/projects/containers.html',
@@ -129,15 +133,21 @@ def project_containers(project_name):
         project_name=project_name)
 
 
+def _get_user_group():
+    if not g.user:
+        return None
+    return 'platform'
+
+
 @bp.route('/projects/deploy_container/<project_name>')
+@demand_login
 def project_deploy_container(project_name):
-    # TODO list_group_pods default 'platform'
     images = eru.list_app_images(project_name)
     image_names = [i['image_url'] for i in images]
     return render_template(
         'deploy/projects/deploy_container.html', images=image_names,
         envs=eru.list_app_env_names(project_name)['data'],
-        pods=eru.list_group_pods('platform'), project_name=project_name,
+        pods=eru.list_group_pods(_get_user_group()), project_name=project_name,
         networks=eru.list_network())
 
 
@@ -155,6 +165,7 @@ def pod_hosts(pod_name):
 
 
 @bp.route('/hosts/<host_name>/containers/')
+@demand_login
 def host_containers(host_name):
     host = eru.get_host(host_name)
     if host is None:
@@ -167,12 +178,14 @@ def host_containers(host_name):
 
 
 @bp.route('/api/groups')
+@demand_login
 @json_api
 def deploy_groups():
     return [[g['id'], g['name']] for g in eru.list_groups()]
 
 
 @bp.route('/api/projects/register', methods=['POST'])
+@demand_login
 @json_api
 def register_project():
     args = post_form()
@@ -181,12 +194,21 @@ def register_project():
 
 
 @bp.route('/api/pods')
+@demand_login
 @json_api
 def list_pods():
     return [p['name'] for p in eru.list_pods()]
 
 
+@bp.route('/api/pods/<pod_name>/list_hosts')
+@demand_login
+@json_api
+def list_hosts_in_pod(pod_name):
+    return eru.list_pod_hosts(pod_name, g.start, g.limit)
+
+
 @bp.route('/api/projects/build_image', methods=['POST'])
+@demand_login
 @json_api
 def project_build_image():
     args = post_form()
@@ -196,9 +218,8 @@ def project_build_image():
     revision = args['revision']
     _register_app(app['git'], revision)
     project = _get_project(app['git'])
-    # TODO 这个 group 似乎不是这个吧...
-    group = 'platform'
     pod = args['pod']
+    group = _get_user_group()
     image = 'docker-registry.intra.hunantv.com/nbeimage/%s' % args['image']
     logging.info('Start building group=%s pod=%s app=%s image=%s rev=%s',
                  group, pod, app['name'], image, revision)
@@ -206,6 +227,7 @@ def project_build_image():
 
 
 @bp.route('/api/revision/list_entrypoints', methods=['GET'])
+@demand_login
 @json_api
 def revision_list_entrypoints():
     project = _get_project(eru.get_app(request.args['project'])['git'])
@@ -214,13 +236,14 @@ def revision_list_entrypoints():
 
 
 @bp.route('/api/projects/deploy_container', methods=['POST'])
+@demand_login
 @json_api
 def project_deploy_container_api():
     args = request.form
     network = (args['network'] if isinstance(args['network'], list)
                else [args['network']])
     eru.deploy_private(
-        group_name='platform',
+        group_name=_get_user_group(),
         pod_name=args['pod'],
         app_name=args['project'],
         ncore=float(args['ncore']),
@@ -229,10 +252,12 @@ def project_deploy_container_api():
         entrypoint=args['entrypoint'],
         env=args['env'],
         network_ids=args['network'],
+        host_name=args.get('host'),
     )
 
 
 @bp.route('/api/containers', methods=['GET'])
+@demand_login
 @json_api
 def get_containers():
     appname = request.args.get('app', '')
@@ -246,6 +271,7 @@ def get_containers():
 
 
 @bp.route('/api/projects/save_env', methods=['POST'])
+@demand_login
 @json_api
 def set_project_env():
     args = post_form()
@@ -263,12 +289,14 @@ def set_project_env():
 
 
 @bp.route('/api/tasklog/<int:task_id>')
+@demand_login
 @json_api
 def get_task_log(task_id):
     return eru.get_task_log(task_id)
 
 
 @bp.route('/api/containers/stop', methods=['POST'])
+@demand_login
 @json_api
 def stop_container():
     cid = post_form()['id']
@@ -277,6 +305,7 @@ def stop_container():
 
 
 @bp.route('/api/containers/start', methods=['POST'])
+@demand_login
 @json_api
 def start_container():
     cid = post_form()['id']
@@ -285,6 +314,7 @@ def start_container():
 
 
 @bp.route('/api/containers/remove', methods=['POST'])
+@demand_login
 @json_api
 def rm_container():
     cid = post_form()['id']

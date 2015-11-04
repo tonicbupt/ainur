@@ -2,6 +2,7 @@ import os
 import json
 import logging
 import calendar
+import urllib
 import urllib2
 import flask
 import werkzeug.exceptions
@@ -10,8 +11,8 @@ from cgi import parse_qs
 from eruhttp import EruException
 from datetime import datetime
 from functools import wraps
-from flask import request, Response
-from urlparse import urlparse
+from flask import request, Response, g
+from urlparse import urlparse, urlunparse, ParseResult
 
 from config import GITLAB_DOMAIN
 
@@ -67,8 +68,12 @@ def post_form():
         return {}
 
 
-def forbid(self):
+def forbid():
     raise werkzeug.exceptions.Forbidden()
+
+
+def unauthed():
+    raise werkzeug.exceptions.Unauthorized()
 
 
 def send_file(filename, mimetype=None):
@@ -123,3 +128,21 @@ def parse_git_url(url):
         return r
 
     raise ValueError('Invalid url for git repository')
+
+
+def demand_login(f):
+    @wraps(f)
+    def h(*args, **kwargs):
+        if not flask.g.user:
+            return unauthed()
+        return f(*args, **kwargs)
+    return h
+
+
+def login_url():
+    return urlunparse(ParseResult(
+        'http', 'openids-web.intra.hunantv.com', '/oauth/login', None,
+        urllib.urlencode({
+            'return_to': flask.request.host_url + 'user/login_from_openid/',
+            'days': '14',
+        }), None))

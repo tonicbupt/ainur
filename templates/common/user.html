@@ -1,0 +1,9 @@
+<ul class="nav navbar-nav navbar-right">
+    {% if g.user %}
+    <li><a href='#' class=disabled>
+        <span class="glyphicon glyphicon-user" aria-hidden="true"></span>
+        {{ g.user.realname }}
+    </a></li>
+    <li><a href='/user/logout'>注销</a></li>
+    {% endif %}
+</ul>

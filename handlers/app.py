@@ -1,14 +1,15 @@
 import os
 from cStringIO import StringIO
-from flask import Flask, g, request
+from flask import Flask, g, request, render_template
 from werkzeug.utils import import_string
 
 from config import REDIS_HOST, REDIS_PORT
-from utils import paginator_kwargs
-from .ext import rds
+from utils import paginator_kwargs, login_url
+from .ext import rds, safe_rds_hgetall
 
 blueprints = (
     'index',
+    'user',
     'deploy',
 )
 
@@ -55,5 +56,15 @@ def create_app():
         g.page = request.args.get('page', type=int, default=0)
         g.start = request.args.get('start', type=int, default=g.page * 20)
         g.limit = request.args.get('limit', type=int, default=20)
+
+    @app.before_request
+    def init_user():
+        g.user = safe_rds_hgetall(
+            'user_session:%s' % request.cookies.get('idkey'))
+
+    @app.errorhandler(401)
+    def unauthorized(_):
+        return render_template(
+            'errors/401.html', login_url=login_url()), 401
 
     return app
