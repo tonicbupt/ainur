@@ -25,7 +25,13 @@
             <td>{{ task.action }}</td>
             <td>{{ task.version }}</td>
             <td>
+                {% if task.result == 1 %}
+                成功
+                {% elif task.result == 2 %}
+                失败
+                {% else %}
                 {{ task.result|e }}
+                {% endif %}
                 <button style='float: right' data-toggle='modal' data-target='#task_log' data-id='{{ task.id }}' class='btn btn-default btn-xs btn-detail'>详细</button>
             </td>
             <td>{{ task.created }}</td>
@@ -40,6 +46,7 @@
 {%- import 'common/modal.html' as modal %}
 {{ modal.head('task_log', '任务详细日志') }}
 <pre>
+    <div id='task_log_status' style='color: navy'></div>
     <div id='task_log_streams'></div>
     <div id='task_log_errors' style='color: red'></div>
 </pre>
@@ -51,11 +58,16 @@
 <script src='/static/js/flat-ui.js'></script>
 <script>
 $('#task_log').on('show.bs.modal', function(event) {
+    var status = $('#task_log_status').html('');
     var streams = $('#task_log_streams').html('');
     var errors = $('#task_log_errors').html('');
     $.get('/deploy/api/tasklog/' + $(event.relatedTarget).data('id'), {}, function(r) {
         for (var i in r) {
             var item = r[i];
+            if (item.status) {
+                status.append($('<div>').text(item.status));
+                continue;
+            }
             if (item.stream) {
                 streams.append($('<div>').text(item.stream));
                 continue;

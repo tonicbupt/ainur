@@ -10,7 +10,7 @@ GITLAB_TOKEN = os.getenv('GITLAB_TOKEN', None)
 GITLAB_DOMAIN = os.getenv('GITLAB_DOMAIN', 'git.hunantv.com')
 
 REDIS_HOST = os.getenv('REDIS_HOST', 'localhost')
-REDIS_PORT = int(os.getenv('REDIS_HOST', 6379))
+REDIS_PORT = int(os.getenv('REDIS_PORT', 6379))
 
 LOG_LEVEL = getattr(logging, os.getenv('LOG_LEVEL', 'info').upper())
 LOG_FILE = os.getenv('LOG_FILE', '')

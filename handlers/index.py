@@ -1,4 +1,4 @@
-from flask import render_template, Blueprint
+from flask import render_template, Blueprint, g
 
 bp = Blueprint('index', __name__)
 
