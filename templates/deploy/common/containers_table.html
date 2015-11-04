@@ -48,3 +48,11 @@
     {% endfor %}
 </table>
 
+<script>
+$('.btn-ctl').click(function() {
+    var btn = $(this).attr('disabled', 'disabled');
+    $.post('/deploy/api/containers/' + btn.data('ctl'), {id: btn.data('container-id')}, function() {
+        window.location.reload();
+    });
+});
+</script>

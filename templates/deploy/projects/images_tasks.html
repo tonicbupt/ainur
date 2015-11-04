@@ -19,18 +19,61 @@
             <th>结束时间</th>
         </tr>
 
-        {% for task in tasks %}
+        {%- for task in tasks %}
         <tr>
             <td>{{ task.id }}</td>
             <td>{{ task.action }}</td>
             <td>{{ task.version }}</td>
-            <td>{{ task.result }}</td>
+            <td>
+                {{ task.result|e }}
+                <button style='float: right' data-toggle='modal' data-target='#task_log' data-id='{{ task.id }}' class='btn btn-default btn-xs btn-detail'>详细</button>
+            </td>
             <td>{{ task.created }}</td>
             <td>{{ task.finished if task.finished else '正在执行, 请稍等...' }}</td>
         </tr>
-        {% endfor %}
+        {%- endfor %}
     </table>
 
     {% include 'common/pagination.html' %}
 </div>
+
+{%- import 'common/modal.html' as modal %}
+{{ modal.head('task_log', '任务详细日志') }}
+<pre>
+    <div id='task_log_streams'></div>
+    <div id='task_log_errors' style='color: red'></div>
+</pre>
+{{ modal.tail() }}
+
+{% endblock %}
+
+{% block page_js %}
+<script src='/static/js/flat-ui.js'></script>
+<script>
+$('#task_log').on('show.bs.modal', function(event) {
+    var streams = $('#task_log_streams').html('');
+    var errors = $('#task_log_errors').html('');
+    $.get('/deploy/api/tasklog/' + $(event.relatedTarget).data('id'), {}, function(r) {
+        for (var i in r) {
+            var item = r[i];
+            if (item.stream) {
+                streams.append($('<div>').text(item.stream));
+                continue;
+            }
+            if (item.error) {
+                errors.append($('<div>').text(item.error));
+                continue;
+            }
+        }
+    });
+});
+</script>
+{% endblock %}
+
+{% block page_css %}
+<style>
+.btn-detail {
+    float: right;
+}
+</style>
 {% endblock %}
