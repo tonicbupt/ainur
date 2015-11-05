@@ -1,9 +1,11 @@
 <ul class="nav navbar-nav navbar-right">
     {% if g.user %}
-    <li><a href='#' class=disabled>
+    <li><a href='/user/me' class=disabled>
         <span class="glyphicon glyphicon-user" aria-hidden="true"></span>
         {{ g.user.realname }}
     </a></li>
     <li><a href='/user/logout'>注销</a></li>
+    {% else %}
+    <li><a href='{{ login_url() }}'>登入</a></li>
     {% endif %}
 </ul>

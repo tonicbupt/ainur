@@ -1,15 +1,24 @@
-# coding: utf-8
-
 import yaml
+import json
 import logging
+from datetime import date, datetime
 from flask import render_template, Blueprint, request, g
 from redis.exceptions import RedisError
+from eruhttp import EruException
 
 from utils import json_api, post_form, parse_git_url, not_found, demand_login
 from clients import gitlab, eru
 from .ext import rds, safe_rds_get, safe_rds_set
 
 bp = Blueprint('deploy', __name__, url_prefix='/deploy')
+
+
+@bp.route('/audit/logs')
+@demand_login
+def audit_logs():
+    dt = request.query_string or date.today().strftime('%Y-%m-%d')
+    return render_template('deploy/audit/logs.html', date=dt, logs=[
+        json.loads(x) for x in rds.lrange('task:%s' % dt, 0, -1)])
 
 
 def _get_project(repo_url):
@@ -82,8 +91,12 @@ def projects_new():
 
 @bp.route('/projects/detail/<project_name>')
 def project_detail(project_name):
-    return render_template('deploy/projects/detail.html',
-                           project=eru.get_app(project_name))
+    try:
+        project = eru.get_app(project_name)
+    except EruException as e:
+        return render_template(
+            'deploy/projects/detail_notfound.html', project=project_name), 404
+    return render_template('deploy/projects/detail.html', project=project)
 
 
 @bp.route('/projects/images/<project_name>')
@@ -207,6 +220,19 @@ def list_hosts_in_pod(pod_name):
     return eru.list_pod_hosts(pod_name, g.start, g.limit)
 
 
+def _push_to_today_task(act, args):
+    task_key = date.today().strftime('task:%Y-%m-%d')
+    rds.lpush(task_key, json.dumps({
+        'time': datetime.now().strftime('%H:%M:%S'),
+        'user': g.user['uid'],
+        'act': act,
+        'args': args,
+    }))
+    rds.expire(task_key, SIX_MONTHS)
+
+SIX_MONTHS = 86400 * 30 * 6
+
+
 @bp.route('/api/projects/build_image', methods=['POST'])
 @demand_login
 @json_api
@@ -223,7 +249,8 @@ def project_build_image():
     image = 'docker-registry.intra.hunantv.com/nbeimage/%s' % args['image']
     logging.info('Start building group=%s pod=%s app=%s image=%s rev=%s',
                  group, pod, app['name'], image, revision)
-    return eru.build_image(group, pod, app['name'], image, revision)
+    eru.build_image(group, pod, app['name'], image, revision)
+    _push_to_today_task('build_image', args)
 
 
 @bp.route('/api/revision/list_entrypoints', methods=['GET'])
@@ -240,8 +267,6 @@ def revision_list_entrypoints():
 @json_api
 def project_deploy_container_api():
     args = request.form
-    network = (args['network'] if isinstance(args['network'], list)
-               else [args['network']])
     eru.deploy_private(
         group_name=_get_user_group(),
         pod_name=args['pod'],
@@ -251,9 +276,10 @@ def project_deploy_container_api():
         version=args['version'],
         entrypoint=args['entrypoint'],
         env=args['env'],
-        network_ids=args['network'],
+        network_ids=args.getlist('network'),
         host_name=args.get('host'),
     )
+    _push_to_today_task('deploy', args)
 
 
 @bp.route('/api/containers', methods=['GET'])
@@ -286,6 +312,7 @@ def set_project_env():
             raise ValueError('invalid env item %s at line %d' % (i, line + 1))
         content[kv[0].strip()] = kv[1].strip()
     eru.set_app_env(project, env, **content)
+    _push_to_today_task('edit_env', args)
 
 
 @bp.route('/api/tasklog/<int:task_id>')
@@ -302,6 +329,7 @@ def stop_container():
     cid = post_form()['id']
     logging.info('Stop container %s', cid)
     eru.stop_container(cid)
+    _push_to_today_task('stop', cid)
 
 
 @bp.route('/api/containers/start', methods=['POST'])
@@ -311,6 +339,7 @@ def start_container():
     cid = post_form()['id']
     logging.info('Start container %s', cid)
     eru.start_container(cid)
+    _push_to_today_task('start', cid)
 
 
 @bp.route('/api/containers/remove', methods=['POST'])
@@ -320,3 +349,4 @@ def rm_container():
     cid = post_form()['id']
     logging.info('Remove container %s', cid)
     eru.remove_containers([cid])
+    _push_to_today_task('remove', cid)

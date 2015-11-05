@@ -8,6 +8,7 @@
         <th>活跃</th>
         <th>上线时间</th>
         <th>主机</th>
+        <th>网卡地址</th>
         <th>CPU</th>
         <th>内存使用</th>
         <th>操作</th>
@@ -15,7 +16,7 @@
 
     {% for c in containers %}
     <tr>
-        <td>{{ c.container_id[:17] }}</td>
+        <td>{{ c.container_id[:11] }}</td>
         <td>{{ c.name|e }}</td>
         <td>{{ c.version }}</td>
         <td>{{ c.entrypoint|e }}</td>
@@ -23,6 +24,7 @@
         <td>{{ '是' if c.is_alive else '否' }}</td>
         <td>{{ c.created }}</td>
         <td>{{ c.host }}</td>
+        <td>{{ ' / '.join(c.backends) }}</td>
         <td>
             独占
             {%- for cr in c.cores.full if c.cores.full %}
@@ -37,12 +39,12 @@
         <td>{{ c.memory|filesizeformat }}</td>
         <td>
             {% if c.is_alive %}
-            <button class='btn btn-warning btn-ctl' data-ctl='stop' data-container-id='{{ c.container_id }}'>下线</button>
+            <button class='btn btn-warning btn-ctl' data-ctl='stop' data-container-id='{{ c.container_id }}'>停止</button>
             {% else %}
-            <button class='btn btn-primary btn-ctl' data-ctl='start' data-container-id='{{ c.container_id }}'>上线</button>
+            <button class='btn btn-primary btn-ctl' data-ctl='start' data-container-id='{{ c.container_id }}'>启动</button>
             {% endif %}
-            <button class='btn btn-danger btn-toggle-next'>删除</button>
-            <button class='btn btn-danger btn-ctl' data-ctl='remove' data-container-id='{{ c.container_id }}'>确认删除</button>
+            <button class='btn btn-danger btn-toggle-next'>下线</button>
+            <button class='btn btn-danger btn-ctl' data-ctl='remove' data-container-id='{{ c.container_id }}'>确认下线</button>
         </td>
     </tr>
     {% endfor %}

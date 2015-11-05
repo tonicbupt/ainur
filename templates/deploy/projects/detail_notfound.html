@@ -1,0 +1,12 @@
+{% extends './deploy/base.html' %}
+
+{% block main_view %}
+<div class="panel panel-default content-margin-top">
+    <div class="panel-heading panel-heading02">
+        <ul class="breadcrumb">
+            <li><a href='/deploy/'>项目列表</a></li>
+            <li class="active">{{ project|e }} 项目未找到</li>
+        </ul>
+    </div>
+</div>
+{% endblock %}

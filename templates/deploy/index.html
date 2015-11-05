@@ -11,7 +11,6 @@
             <button id="toProject" class="glyphicon glyphicon-arrow-right"></span></button>
         </div>
     </div>
-
     <table class="table table-bordered table-striped">
         <tr>
             <th>项目ID</th>
@@ -32,19 +31,28 @@
         </tr>
         {% endfor %}
     </table>
-
     {% include 'common/pagination.html' %}
 </div>
 {% endblock %}
 
 {% block page_js %}
 <script>
-$('#toProject').click(function() {
+function goProj() {
     var proj = $('#projectName').val().trim();
     if (proj.length === 0) {
         return;
     }
     window.location = '/deploy/projects/detail/' + proj;
+}
+
+$('#toProject').click(function() {
+    goProj();
+});
+
+$('#projectName').keyup(function(event) {
+    if (event.keyCode == 13) {
+        goProj();
+    }
 });
 </script>
 {% endblock %}

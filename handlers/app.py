@@ -48,7 +48,7 @@ def create_app():
         import_name = '%s.%s:bp' % (__package__, bp)
         app.register_blueprint(import_string(import_name))
 
-    for fl in (max, min, paginator_kwargs):
+    for fl in (max, min, paginator_kwargs, login_url):
         app.add_template_global(fl)
 
     @app.before_request
@@ -64,7 +64,6 @@ def create_app():
 
     @app.errorhandler(401)
     def unauthorized(_):
-        return render_template(
-            'errors/401.html', login_url=login_url()), 401
+        return render_template('errors/401.html'), 401
 
     return app
