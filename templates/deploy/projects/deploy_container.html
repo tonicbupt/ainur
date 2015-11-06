@@ -27,6 +27,7 @@
                         <option value='{{ i[-7:] }}'>{{ i[-7:] }}</option>
                     {% endfor %}
                     </select>
+                    <a href='/deploy/projects/build_image/{{ project_name|e }}' target='_blank'>去构建镜像</a>
                 </div>
             </div>
 
@@ -63,6 +64,7 @@
                         <option value='{{ e|e }}'>{{ e|e }}</option>
                     {% endfor %}
                     </select>
+                    <a href='/deploy/projects/envs/{{ project_name|e }}' target='_blank'>去配置环境</a>
                 </div>
             </div>
 

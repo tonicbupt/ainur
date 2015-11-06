@@ -1,5 +1,3 @@
-# encoding=utf-8
-
 import json
 import urllib
 import urllib2
@@ -27,9 +25,7 @@ def logout():
 @bp.route('/me')
 @demand_login
 def display_my_info():
-    return render_template(
-        'user/info.html', who=g.user,
-        group=rds.get('group:%d' % g.user['group_id']))
+    return render_template('user/myinfo.html', who=g.user)
 
 
 def _login_redirect(user):
@@ -47,19 +43,3 @@ def login_from_openid():
     r = urllib2.urlopen('http://openids-web.intra.hunantv.com/oauth/profile/?'
                         + urllib.urlencode({'token': request.args['token']}))
     return _login_redirect(json.loads(r.read()))
-
-
-# ============== #
-# debug shortcut #
-# ============== #
-if DEBUG:
-    @bp.route('/login_as_admin')
-    def debug_login_as_admin():
-        u = safe_rds_get('user:_')
-        if u is None:
-            safe_rds_set('user:_', {
-                'uid': '_',
-                'group': 'platform',
-                'nickname': '0',
-            })
-        return _login_redirect(u)
