@@ -278,6 +278,7 @@ def project_deploy_container_api():
         env=args['env'],
         network_ids=args.getlist('network'),
         host_name=args.get('host'),
+        args=args['extendargs'].split(' '),
     )
     _push_to_today_task('deploy', args)
 
