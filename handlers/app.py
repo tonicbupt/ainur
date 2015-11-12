@@ -3,14 +3,17 @@ from cStringIO import StringIO
 from flask import Flask, g, request, render_template
 from werkzeug.utils import import_string
 
-from config import REDIS_HOST, REDIS_PORT
+from config import REDIS_HOST, REDIS_PORT, SQLALCHEMY_DATABASE_URI
 from utils import paginator_kwargs, login_url
 from .ext import rds, safe_rds_hgetall
+from models.base import init_db
 
 blueprints = (
     'index',
     'user',
     'deploy',
+    'lb',
+    'settings',
 )
 
 def create_app():
@@ -18,6 +21,7 @@ def create_app():
     app.secret_key = os.urandom(24)
     app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024
     app.config['REDIS_URL'] = 'redis://%s:%d/0' % (REDIS_HOST, REDIS_PORT)
+    app.config['SQLALCHEMY_DATABASE_URI'] = SQLALCHEMY_DATABASE_URI
 
     # http://stackoverflow.com/a/11163649
     class _WSGICopyBody(object):
@@ -43,6 +47,7 @@ def create_app():
 
     app.wsgi_app = _WSGICopyBody(app.wsgi_app)
     rds.init_app(app)
+    init_db(app)
 
     for bp in blueprints:
         import_name = '%s.%s:bp' % (__package__, bp)
@@ -61,6 +66,10 @@ def create_app():
     def init_user():
         g.user = safe_rds_hgetall(
             'user_session:%s' % request.cookies.get('idkey'))
+
+    @app.errorhandler(403)
+    def forbid(_):
+        return render_template('errors/403.html'), 403
 
     @app.errorhandler(401)
     def unauthorized(_):

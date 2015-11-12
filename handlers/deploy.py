@@ -13,6 +13,12 @@ from .ext import rds, safe_rds_get, safe_rds_set
 bp = Blueprint('deploy', __name__, url_prefix='/deploy')
 
 
+@bp.route('/')
+def deploy():
+    return render_template('deploy/index.html', page=g.page,
+                           projects=eru.list_apps(g.start, g.limit))
+
+
 @bp.route('/audit/logs')
 @demand_login
 def audit_logs():
@@ -75,12 +81,6 @@ def _register_app(repo_url, commit_id=None):
                  commit_id, repo_url)
     eru.register_app_version(commit_id, repo_url, '', appconfig)
     return appconfig
-
-
-@bp.route('/')
-def deploy():
-    return render_template('deploy/index.html', page=g.page,
-                           projects=eru.list_apps(g.start, g.limit))
 
 
 @bp.route('/projects/new')

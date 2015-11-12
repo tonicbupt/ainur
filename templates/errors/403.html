@@ -1,0 +1,11 @@
+{% extends './base.html' %}
+{% block title %}未授权{% endblock %}
+{% block user_menu %}{% endblock %}
+
+{% block body %}
+<div style='text-align: center'>
+    <h1>未授权</h1>
+    <p>你没有相应的权限</p>
+    <p>继续以游客身份浏览请点击这里<a href='/'>回到首页</a></p>
+</div>
+{% endblock %}

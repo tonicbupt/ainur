@@ -6,10 +6,13 @@ Web UI for Eru.
 
 ## Dependencies
 
-### Redis
+* Redis
+* MySQL
 
-Optional for caching project or app config data.
+# Dev Config
 
-Mandatory for user session management or when building images. Base images should be pushed to `base_images` key, e.g.
+## User
 
-    LPUSH base_images ubuntu:binary-2015.09.06 ubuntu:python-2015.09.06 ubuntu:java-2015.07.20
+若数据库中用户表为空, 需要登入一次内网 OpenID, 产生一个用户.
+
+然后, 登入数据库, 手动将用户的 `priv_flags` 设置为 7, 则该用户具有管理员和 LB 配置权限. 然后注销并重新登入一次, 便可访问所有页面.
