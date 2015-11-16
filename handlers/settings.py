@@ -65,5 +65,5 @@ def set_user():
 @bp.before_request
 @demand_login
 def access_control():
-    if not g.user['admin']:
+    if not g.user.is_admin():
         return forbid()
