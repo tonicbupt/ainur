@@ -1,6 +1,6 @@
 {% extends './base.html' %}
 
-{% block title %}云部署{% endblock %}
+{% block title %}负载均衡{% endblock %}
 
 {% block body %}
 <nav class="navbar navbar-inverse navbar-fixed-top">
@@ -16,11 +16,8 @@
         </div>
         <div id=navbar class="collapse navbar-collapse">
             <ul class="nav navbar-nav">
-                <li><a href='/deploy/'>项目部署</a></li>
-                <li><a href='/deploy/pods/'>机器资源</a> </li>
-                <li><a href='/deploy/audit/logs'>操作日志</a></li>
-                <li><a href='#'>软件列表</a></li>
-                <li><a href='#'>帮助文档</a></li>
+                <li><a href='/lb/'>配置总览</a></li>
+                <li><a href='/lb/balancers/'>均衡容器</a> </li>
             </ul>
             {% include 'common/user.html' %}
         </div>

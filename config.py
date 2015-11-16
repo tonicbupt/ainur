@@ -9,6 +9,12 @@ PERMDIR = os.getenv('ERU_PERMDIR', tempfile.gettempdir())
 GITLAB_TOKEN = os.getenv('GITLAB_TOKEN', None)
 GITLAB_DOMAIN = os.getenv('GITLAB_DOMAIN', 'git.hunantv.com')
 
+MYSQL_HOST = os.getenv('MYSQL_HOST', 'localhost')
+MYSQL_PORT = int(os.getenv('MYSQL_PORT', '3306'))
+MYSQL_USERNAME = os.getenv('MYSQL_USERNAME', 'root')
+MYSQL_PASSWORD = os.getenv('MYSQL_PASSWORD', '')
+MYSQL_DATABASE = os.getenv('MYSQL_DATABASE', 'ainur')
+
 REDIS_HOST = os.getenv('REDIS_HOST', 'localhost')
 REDIS_PORT = int(os.getenv('REDIS_PORT', 6379))
 
@@ -33,3 +39,6 @@ def init_logging():
     logging.basicConfig(**args)
 
 init_logging()
+
+SQLALCHEMY_DATABASE_URI = 'mysql://%s:%s@%s:%d/%s' % (
+    MYSQL_USERNAME, MYSQL_PASSWORD, MYSQL_HOST, MYSQL_PORT, MYSQL_DATABASE)

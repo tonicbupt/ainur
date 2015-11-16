@@ -24,6 +24,10 @@
             <td>姓名</td>
             <td>{{ who.realname|e }}</td>
         </tr>
+        <tr>
+            <td>权限</td>
+            <td>{{ '管理员' if who.admin else '' }} {{ '配置负载均衡' if who.lb else '' }}</td>
+        </tr>
     </table>
 </div>
 {% endblock %}
