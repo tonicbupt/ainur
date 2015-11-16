@@ -25,5 +25,8 @@ class Base(db.Model):
         db.session.commit()
 
     @classmethod
-    def list(cls, skip, limit):
-        return cls.query.offset(skip).limit(limit).all()
+    def list(cls, skip, limit, order_by=None):
+        q = cls.query
+        if order_by is not None:
+            q = q.order_by(order_by)
+        return q.offset(skip).limit(limit).all()
