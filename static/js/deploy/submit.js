@@ -12,7 +12,10 @@ $(document).ready(function() {
                 type: form.data('method') || 'GET',
                 data: form.serialize(),
                 success: function(r) {
-                    btn.removeAttr('disabled')[0].success(r);
+                    btn.removeAttr('disabled');
+                    if (btn[0].success) {
+                        btn[0].success(r);
+                    }
                 },
                 error: function(r) {
                     btn.removeAttr('disabled');
