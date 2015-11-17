@@ -1,0 +1,75 @@
+{% extends './lb/base.html' %}
+
+{% block main_view %}
+<div class="panel panel-default content-margin-top">
+    <div class="panel-heading panel-heading02">
+        <ul class="breadcrumb">
+            <li><a href='/lb/'>均衡器首页</a></li>
+            <li class="active">{{ b.name|e }}</a></li></li>
+        </ul>
+    </div>
+
+    <table class="table table-bordered table-striped">
+        <tr>
+            <th>#</th>
+            <th>应用</th>
+            <th>域名</th>
+            <th>操作</th>
+        </tr>
+        {% for r in b.get_records() %}
+        <tr>
+            <td>{{ r.id }}</td>
+            <td>{{ r.appname|e }}:{{ r.entrypoint|e }}</td>
+            <td>{{ r.domain|e }}</td>
+            <td>
+            </td>
+        </tr>
+        {% endfor %}
+    </table>
+
+    <div class="panel-body">
+        <span>添加一条配置</span>
+        <form class="form-horizontal form-submit" method='POST'>
+            <div class="form-group">
+                <label for="input-ip" class="col-sm-1 control-label">应用名</label>
+                <div class="col-sm-10">
+                    <input type="text" name='appname' id='appname' class="form-control">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="input-ip" class="col-sm-1 control-label">程序入口</label>
+                <div class="col-sm-10">
+                    <select name='entrypoint' id='entrypoints'></select>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="input-ip" class="col-sm-1 control-label">域名</label>
+                <div class="col-sm-10">
+                    <input type="text" name='domain' id='domain' class="form-control">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <div class="col-sm-offset-1 col-sm-11">
+                    <input type="submit" class="btn btn-primary" value='添加'>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block page_js %}
+<script>
+$('#appname').change(function() {
+    $.get('/deploy/api/revision/list_entrypoints_for_latest_ver', {project: $(this).val()}, function(r) {
+        var ep = $('#entrypoints').html('');
+        for (var i = 0; i < r.length; ++i) {
+            ep.append($('<option>').val(r[i]).text(r[i]));
+        }
+    });
+});
+</script>
+{% endblock %}

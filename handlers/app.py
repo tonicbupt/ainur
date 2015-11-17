@@ -64,7 +64,7 @@ def create_app():
         g.limit = request.args.get('limit', type=int, default=20)
 
         user_info = safe_rds_hgetall('user_session:%s' % request.cookies.get('idkey'))
-        g.user = User.get_by_uid(user_info['uid'])
+        g.user = User.get_by_uid(user_info.get('uid'))
 
     @app.errorhandler(403)
     @app.errorhandler(401)

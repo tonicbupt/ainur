@@ -22,6 +22,8 @@ LOG_LEVEL = getattr(logging, os.getenv('LOG_LEVEL', 'info').upper())
 LOG_FILE = os.getenv('LOG_FILE', '')
 LOG_FORMAT = os.getenv('LOG_FORMAT', '%(levelname)s:%(asctime)s:%(message)s')
 
+APPNAME_ERU_LB = 'erulb'
+
 try:
     from local_config import *
 except ImportError:
