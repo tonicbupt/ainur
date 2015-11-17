@@ -14,19 +14,20 @@
     <table class="table table-bordered table-striped">
         <tr>
             <th>#</th>
-            <th>项目</th>
+            <th>名字</th>
             <th>负载均衡容器</th>
-            <th>域名</th>
+            <th>路由</th>
             <th>操作</th>
         </tr>
-        {% for p in plans %}
+        {% for b in balancers %}
         <tr>
-            <td>{{ p.id }}</td>
-            <td>{{ p.project_name|e }} : {{ p.project_entrypoint|e }}</td>
-            <td>{{ p.balancer.container_id }}</td>
-            <td>{{ p.domain_name }}</td>
+            <td>{{ b.name }}</td>
+            <td>{{ b.container_id }}</td>
+            <td>这里是个列表吧</td>
             <td>
-                <a href='/lb/project/{{ p.project_name|e }}/' class="btn btn-default btn-xs"><span class="glyphicon glyphicon-th" aria-hidden="true"></span> 查看</a>
+                <a href='/lb/project/{{ b.appname }}/' class="btn btn-default btn-xs">
+                    <span class="glyphicon glyphicon-th" aria-hidden="true"></span> 查看
+                </a>
             </td>
         </tr>
         {% endfor %}

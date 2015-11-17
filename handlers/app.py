@@ -7,6 +7,7 @@ from config import REDIS_HOST, REDIS_PORT, SQLALCHEMY_DATABASE_URI
 from utils import paginator_kwargs, login_url
 from .ext import rds, safe_rds_hgetall
 from models.base import init_db
+from models.user import User
 
 blueprints = (
     'index',
@@ -62,17 +63,12 @@ def create_app():
         g.start = request.args.get('start', type=int, default=g.page * 20)
         g.limit = request.args.get('limit', type=int, default=20)
 
-    @app.before_request
-    def init_user():
-        g.user = safe_rds_hgetall(
-            'user_session:%s' % request.cookies.get('idkey'))
+        user_info = safe_rds_hgetall('user_session:%s' % request.cookies.get('idkey'))
+        g.user = User.get_by_uid(user_info['uid'])
 
     @app.errorhandler(403)
-    def forbid(_):
-        return render_template('errors/403.html'), 403
-
     @app.errorhandler(401)
-    def unauthorized(_):
-        return render_template('errors/401.html'), 401
+    def error_handler(e):
+        return render_template('errors/%s.html' % e.code), e.code
 
     return app
