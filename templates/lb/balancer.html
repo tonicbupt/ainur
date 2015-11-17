@@ -12,17 +12,14 @@
     <table class="table table-bordered table-striped">
         <tr>
             <th>#</th>
-            <th>应用</th>
-            <th>域名</th>
-            <th>操作</th>
+            <th>appname:entrypoint</th>
+            <th>domain</th>
         </tr>
         {% for r in b.get_records() %}
         <tr>
             <td>{{ r.id }}</td>
-            <td>{{ r.appname|e }}:{{ r.entrypoint|e }}</td>
-            <td>{{ r.domain|e }}</td>
-            <td>
-            </td>
+            <td>{{ r.backend_name }}</td>
+            <td>{{ r.domain }}</td>
         </tr>
         {% endfor %}
     </table>
