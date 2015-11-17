@@ -39,7 +39,9 @@ def _create_lb_container(args):
     container_id = deploy_container(
         g.user.group, args['pod'], args['entrypoint'], args['version'],
         args['env'], args['host'])
-    Balancer.create(args['host'], g.user.group, g.user.id, container_id)
+
+    container = eru.get_container(container_id)
+    Balancer.create(container['host'], g.user.group, g.user.id, container_id)
     _push_to_today_task('create', request.form)
 
 
@@ -70,6 +72,14 @@ def records(balancer_id):
     update_record(balancer, record)
     _push_to_today_task('add_record', request.form)
     return redirect(url_for('lb.records', balancer_id=balancer_id))
+
+
+@bp.route('/<int:balancer_id>', methods=['DELETE'])
+@json_api
+def delete_balancer(balancer_id):
+    balancer = Balancer.query.get_or_404(balancer_id)
+    eru.remove_containers([balancer.container_id])
+    balancer.delete()
 
 
 @bp.before_request

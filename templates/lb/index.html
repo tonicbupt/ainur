@@ -22,7 +22,11 @@
         <tr>
             <td>{{ b.id }}</td>
             <td>{{ b.container_id[:11] }}</td>
-            <td>这里是个列表吧</td>
+            <td>
+              {% for r in b.get_records() %}
+                <p>{{r.domain}} --> {{r.backend_name}}</p>
+              {% endfor %}
+            </td>
             <td>
                 <a href='/lb/{{ b.id }}/records' class="btn btn-default btn-xs">
                     <i class="fa fa-cube"></i> 查看容器

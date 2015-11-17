@@ -21,7 +21,7 @@ class BalanceRecord(Base):
         r = cls()
         r.appname = appname
         r.entrypoint = entrypoint
-        r.domain = r.domain
+        r.domain = domain
         r.balancer_id = balancer_id
         db.session.add(r)
         db.session.commit()
@@ -30,6 +30,11 @@ class BalanceRecord(Base):
     @classmethod
     def get_by_balancer_id(cls, balancer_id):
         return cls.query.filter_by(balancer_id=balancer_id).order_by(cls.id.desc()).all()
+
+    @classmethod
+    def delete_by_balancer_id(cls, balancer_id):
+        cls.query.filter_by(balancer_id=balancer_id).delete()
+        db.session.commit()
 
     @property
     def backend_name(self):
@@ -88,35 +93,48 @@ class Balancer(Base):
         意思是说把这个appname的应用的entrypoint下面的所有后端,
         都路由给domain这个域名
         """
-        return BalanceRecord.create(appname, entrypoint, domain)
+        return BalanceRecord.create(appname, entrypoint, domain, self.id)
 
     def get_records(self):
         return BalanceRecord.get_by_balancer_id(self.id)
+
+    def delete(self):
+        BalanceRecord.delete_by_balancer_id(self.id)
+        db.session.delete(self)
+        db.session.commit()
 
 
 def update_record(balancer, record):
     if not record:
         return
 
-    headers = {'Host': balancer.api_url}
+    headers = {'Host': balancer.addr}
 
     # 1. 添加upstream
-    upstream_url = balancer.addr + '/upstream'
+    upstream_url = balancer.addr + '/__erulb__/upstream'
+    if not upstream_url.startswith('http://'):
+        upstream_url = 'http://' + upstream_url
     # 现在还没加 weight
     backends = record.get_backends()
     payload = {
         'backend': record.backend_name,
-        'servers': ['server %s;' for b in backends],
+        'servers': ['server %s;' % b for b in backends],
     }
     r = requests.put(upstream_url, headers=headers, data=json.dumps(payload))
+    if r.status_code != 200:
+        return False
     if r.json()['msg'] != 'ok':
         return False
 
     # 2. 添加domain
-    domain_url = balancer.addr + '/domain'
+    domain_url = balancer.addr + '/__erulb__/domain'
+    if not domain_url.startswith('http://'):
+        domain_url = 'http://' + domain_url
     payload = {
         'backend': record.backend_name,
         'name': record.domain,
     }
     r = requests.put(domain_url, headers=headers, data=json.dumps(payload))
+    if r.status_code != 200:
+        return False
     return r.json()['msg'] == 'ok'
