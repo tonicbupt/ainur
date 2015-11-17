@@ -38,7 +38,7 @@ class BalanceRecord(Base):
 
     @property
     def backend_name(self):
-        return '%s:%s' % (self.appname, self.entrypoint)
+        return '%s_%s' % (self.appname, self.entrypoint)
 
     def get_backends(self):
         backends = []

@@ -12,20 +12,22 @@
     <table class="table table-bordered table-striped">
         <tr>
             <th>#</th>
-            <th>appname:entrypoint</th>
+            <th>appname</th>
+            <th>entrypoint</th>
             <th>domain</th>
         </tr>
         {% for r in b.get_records() %}
         <tr>
             <td>{{ r.id }}</td>
-            <td>{{ r.backend_name }}</td>
+            <td>{{ r.appname }}</td>
+            <td>{{ r.entrypoint }}</td>
             <td>{{ r.domain }}</td>
         </tr>
         {% endfor %}
     </table>
 
     <div class="panel-body">
-        <span>添加一条配置</span>
+        <span>添加一条路由</span>
         <form class="form-horizontal form-submit" method='POST'>
             <div class="form-group">
                 <label for="input-ip" class="col-sm-1 control-label">应用名</label>
