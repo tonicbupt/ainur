@@ -6,7 +6,9 @@ from flask import render_template, Blueprint, request, g
 from redis.exceptions import RedisError
 from eruhttp import EruException
 
-from utils import json_api, post_form, parse_git_url, not_found, demand_login
+from config import APPNAME_ERU_LB
+from utils import (json_api, post_form, parse_git_url, not_found, demand_login,
+                   SIX_MONTHS)
 from clients import gitlab, eru
 from .ext import rds, safe_rds_get, safe_rds_set
 
@@ -224,13 +226,11 @@ def _push_to_today_task(act, args):
     task_key = date.today().strftime('task:%Y-%m-%d')
     rds.lpush(task_key, json.dumps({
         'time': datetime.now().strftime('%H:%M:%S'),
-        'user': g.user['uid'],
+        'user': g.user.uid,
         'act': act,
         'args': args,
     }))
     rds.expire(task_key, SIX_MONTHS)
-
-SIX_MONTHS = 86400 * 30 * 6
 
 
 @bp.route('/api/projects/build_image', methods=['POST'])
@@ -262,11 +262,31 @@ def revision_list_entrypoints():
     return y['entrypoints'].keys()
 
 
+def _lastest_version_sha(what):
+    try:
+        return eru.list_app_versions(what)['versions'][0]['sha']
+    except LookupError:
+        raise EruException('eru fail to give version SHA of ' + what)
+
+
+@bp.route('/api/revision/list_entrypoints_for_latest_ver', methods=['GET'])
+@demand_login
+@json_api
+def revision_list_entrypoints_for_latest_ver():
+    p = request.args['project']
+    project = _get_project(eru.get_app(p)['git'])
+    y = _get_rev_appyaml(project['id'], _lastest_version_sha(p))
+    return y['entrypoints'].keys()
+
+
 @bp.route('/api/projects/deploy_container', methods=['POST'])
 @demand_login
 @json_api
 def project_deploy_container_api():
     args = request.form
+    project = args['project']
+    if project == APPNAME_ERU_LB:
+        raise ValueError('Unable to deploy eru-lb, do it on load balance page')
     eru.deploy_private(
         group_name=_get_user_group(),
         pod_name=args['pod'],

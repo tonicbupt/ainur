@@ -3,4 +3,5 @@ flask-redis==0.1.0
 requests==2.4.3
 pyapi-gitlab==7.8.5
 PyYAML==3.11
+retrying==1.3.3
 eru-py

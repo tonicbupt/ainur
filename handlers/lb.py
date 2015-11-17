@@ -1,9 +1,16 @@
 # coding: utf-8
 
+import logging
+import json
+from datetime import date, datetime
+from retrying import retry
 from flask import render_template, Blueprint, request, g, url_for, abort, redirect
 
-from utils import demand_login
+from config import APPNAME_ERU_LB
+from clients import eru
+from utils import demand_login, json_api, SIX_MONTHS
 from models.balancer import Balancer, update_record
+from .ext import rds
 
 bp = Blueprint('lb', __name__, url_prefix='/lb')
 
@@ -14,32 +21,54 @@ def index():
     return render_template('lb/index.html', balancers=balancers)
 
 
+def _push_to_today_task(act, args):
+    task_key = date.today().strftime('lbaudit:%Y-%m-%d')
+    rds.lpush(task_key, json.dumps({
+        'time': datetime.now().strftime('%H:%M:%S'),
+        'user': g.user.uid,
+        'act': act,
+        'args': args,
+    }))
+    rds.expire(task_key, SIX_MONTHS)
+
+
+@json_api
+def _create_lb_container(args):
+    if g.user.group is None:
+        raise ValueError('you are not in a group')
+    container_id = deploy_container(
+        g.user.group, args['pod'], args['entrypoint'], args['version'],
+        args['env'], args['host'])
+    Balancer.create(args['host'], g.user.group, g.user.id, container_id)
+    _push_to_today_task('create', request.form)
+
+
 @bp.route('/create', methods=['GET', 'POST'])
 def create():
     if request.method == 'GET':
-        return 'get create page'
-
-    # TODO create container
-    container_id = 'xxx'
-    Balancer.create(g.user.group, g.user.id, container_id)
-    return redirect(url_for('lb.index'))
+        images = eru.list_app_images(APPNAME_ERU_LB)
+        image_names = [i['image_url'] for i in images]
+        return render_template(
+            'lb/create.html', appname=APPNAME_ERU_LB, images=image_names,
+            envs=eru.list_app_env_names(APPNAME_ERU_LB)['data'],
+            pods=eru.list_pods())
+    return _create_lb_container(request.form)
 
 
 @bp.route('/<int:balancer_id>/records', methods=['GET', 'POST'])
 def records(balancer_id):
-    balancer = Balancer.get(balancer_id)
-    if not balancer:
-        abort(404)
-
+    balancer = Balancer.query.get_or_404(balancer_id)
     if request.method == 'GET':
-        return 'get records page'
+        return render_template('lb/balancer.html', b=balancer)
 
     appname = request.form['appname']
     domain = request.form['domain']
     entrypoint = request.form['entrypoint']
+    logging.debug('Add record for %s:%s @ %s', appname, entrypoint, domain)
 
     record = balancer.add_record(appname, entrypoint, domain)
     update_record(balancer, record)
+    _push_to_today_task('add_record', request.form)
     return redirect(url_for('lb.records', balancer_id=balancer_id))
 
 
@@ -48,3 +77,36 @@ def records(balancer_id):
 def access_control():
     if not g.user.is_lb_mgr():
         abort(403)
+
+
+@retry(stop_max_attempt_number=64, wait_fixed=500)
+def poll_task_for_container_id(task_id):
+    r = eru.get_task(task_id)
+    if r['result'] != 1:
+        raise ValueError('task not finished: %s' % r)
+    try:
+        return r['props']['container_ids'][0]
+    except LookupError:
+        raise ValueError('Eru returns invalid container info task<%d>: %s' %
+                         (task_id, r))
+
+
+def deploy_container(group, pod, entrypoint, version, env, host):
+    r = eru.deploy_private(
+        group_name=group,
+        pod_name=pod,
+        app_name=APPNAME_ERU_LB,
+        ncore=1.0,
+        ncontainer=1,
+        version=version,
+        entrypoint=entrypoint,
+        env=env,
+        network_ids=[],
+        host_name=host,
+    )
+    try:
+        task_id = r['tasks'][0]
+        logging.info('Task created: %s', task_id)
+    except LookupError:
+        raise ValueError('eru fail to create a task ' + str(r))
+    return poll_task_for_container_id(task_id)

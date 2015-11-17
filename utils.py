@@ -16,6 +16,9 @@ from urlparse import urlparse, urlunparse, ParseResult
 
 from config import GITLAB_DOMAIN
 
+# for redis expire
+SIX_MONTHS = 86400 * 30 * 6
+
 
 def paginator_kwargs(kw):
     d = kw.copy()

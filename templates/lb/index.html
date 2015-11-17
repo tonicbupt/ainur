@@ -4,7 +4,7 @@
 <div class="panel panel-default content-margin-top">
     <div class="row clearfix">
         <div class="panel-heading text-left" style="float:left;">
-            <a class="btn btn-default btn-dark" href='/lb/plans/new'><span class="glyphicon glyphicon-plus" aria-hidden="true"></span> 新建配置</a>
+            <a class="btn btn-default btn-dark" href='/lb/create'><span class="glyphicon glyphicon-plus" aria-hidden="true"></span> 新建容器</a>
         </div>
         <div class="search_bar">
             <input type="text" id='projectName' class="form-control" placeholder="输入项目名字跳转">
@@ -14,20 +14,25 @@
     <table class="table table-bordered table-striped">
         <tr>
             <th>#</th>
-            <th>名字</th>
-            <th>负载均衡容器</th>
+            <th>容器 ID</th>
             <th>路由</th>
             <th>操作</th>
         </tr>
         {% for b in balancers %}
         <tr>
-            <td>{{ b.name }}</td>
-            <td>{{ b.container_id }}</td>
+            <td>{{ b.id }}</td>
+            <td>{{ b.container_id[:11] }}</td>
             <td>这里是个列表吧</td>
             <td>
-                <a href='/lb/project/{{ b.appname }}/' class="btn btn-default btn-xs">
-                    <span class="glyphicon glyphicon-th" aria-hidden="true"></span> 查看
+                <a href='/lb/{{ b.id }}/records' class="btn btn-default btn-xs">
+                    <i class="fa fa-cube"></i> 查看容器
                 </a>
+
+                {% if b.appname %}
+                <a href='/lb/project/{{ b.appname }}/' class="btn btn-default btn-xs">
+                    <span class="glyphicon glyphicon-th" aria-hidden="true"></span> 查看应用
+                </a>
+                {% endif %}
             </td>
         </tr>
         {% endfor %}
