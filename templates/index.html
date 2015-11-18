@@ -1,6 +1,6 @@
 {% extends './base.html' %}
 
-{% block title %}云平台{% endblock %}
+{% block title %}Ainur{% endblock %}
 
 {%- block page_css %}
 <link rel="stylesheet" href="/static/css/public.css">
@@ -10,9 +10,6 @@
 {%- block body %}
 <div class="container">
     <div class="top clearfix">
-        <div class="logo">
-            <a href="#"><img src="/static/images/logo_black.jpg"></a>
-        </div>
         {%- if g.user %}
         <dl>
             <dt class='clearfix'>
@@ -27,51 +24,14 @@
         {% endif %}
     </div>
     <div class="main">
-        <dl class="main_title">
-            <dd class="title01">为你开启，自由之门</dd>
-            <dd class="title02">运筹帷幄之中，决胜千里之外</dd>
-            <dd class="title03">让故障无处遁形</dd>
-            <dd class="title04">个人信息管理</dd>
-            <dd class="title05">运维树用户管理</dd>
-        </dl>
         <ul class="main_list">
             <li>
-                <a href="/deploy/"><img src="/static/images/cloudArrange.png">
-                    <h3>云部署</h3></a>
+                <a href="/deploy/"><h3>Deploy</h3></a>
             </li>
             <li>
-                <a href="/lb/"><img src="/static/images/basicMonitor.png">
-                    <h3>负载均衡</h3></a>
-            </li>
-            <li>
-                <a href="#"><img src="/static/images/businessMonitor.png">
-                    <h3>监控系统</h3></a>
-            </li>
-            <li>
-                <a href="#"><img src="/static/images/personalCenter.png">
-                    <h3>个人中心</h3></a>
-            </li>
-            <li>
-                <a href="/settings/"><img src="/static/images/systermSetting.png">
-                    <h3>系统设置</h3></a>
+                <a href="/lb/"><h3>Load Balance</h3></a>
             </li>
         </ul>
     </div>
 </div>
-{% endblock %}
-
-{% block page_js %}
-<script type="text/javascript">
-    $(document).ready(function() {
-        $("#userInfo").click(function() {
-            $(".top dd").slideToggle();
-            $("#userInfo #arrow").toggleClass("up");
-        });
-        $(".main_list li").mouseenter(function() {
-            var index = $(this).index();
-            $(".main_title dd").hide();
-            $($(".main_title dd").get(index)).fadeIn();
-        });
-    });
-</script>
 {% endblock %}
