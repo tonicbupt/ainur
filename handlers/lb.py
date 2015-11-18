@@ -74,12 +74,21 @@ def records(balancer_id):
     return redirect(url_for('lb.records', balancer_id=balancer_id))
 
 
-@bp.route('/<int:balancer_id>', methods=['DELETE'])
+@bp.route('/api/<int:balancer_id>', methods=['DELETE'])
 @json_api
 def delete_balancer(balancer_id):
     balancer = Balancer.query.get_or_404(balancer_id)
     eru.remove_containers([balancer.container_id])
+    _push_to_today_task('delete', {'balancer': balancer.id,
+                                   'container': balancer.container_id})
     balancer.delete()
+
+
+@bp.route('/audit/')
+def audit_logs():
+    dt = request.query_string or date.today().strftime('%Y-%m-%d')
+    return render_template('lb/audit.html', date=dt, logs=[
+        json.loads(x) for x in rds.lrange('lbaudit:%s' % dt, 0, -1)])
 
 
 @bp.before_request

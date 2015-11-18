@@ -37,6 +37,11 @@
                     <span class="glyphicon glyphicon-th" aria-hidden="true"></span> 查看应用
                 </a>
                 {% endif %}
+
+                <button class="btn btn-danger btn-toggle-next btn-xs">
+                    <i class="fa fa-trash"></i> 下线
+                </button>
+                <button class="btn btn-danger btn-xs btn-delete" data-id='{{ b.id }}'>确定下线</button>
             </td>
         </tr>
         {% endfor %}
@@ -46,6 +51,7 @@
 {% endblock %}
 
 {% block page_js %}
+<script src='/static/js/common.js'></script>
 <script>
 function goProj() {
     var proj = $('#projectName').val().trim();
@@ -63,6 +69,17 @@ $('#projectName').keyup(function(event) {
     if (event.keyCode == 13) {
         goProj();
     }
+});
+
+$('.btn-delete').click(function() {
+    var btn = $(this);
+    $.ajax({
+        url: '/lb/api/' + btn.data('id'),
+        type: 'DELETE',
+        success: function() {
+            btn.parent().parent().remove();
+        }
+    });
 });
 </script>
 {% endblock %}
