@@ -9,7 +9,7 @@ from flask import render_template, Blueprint, request, g, url_for, abort, redire
 from config import APPNAME_ERU_LB
 from clients import eru
 from utils import demand_login, json_api, SIX_MONTHS
-from models.balancer import Balancer, update_record
+from models.balancer import Balancer, BalanceRecord
 from .ext import rds
 
 bp = Blueprint('lb', __name__, url_prefix='/lb')
@@ -68,20 +68,37 @@ def records(balancer_id):
     entrypoint = request.form['entrypoint']
     logging.debug('Add record for %s:%s @ %s', appname, entrypoint, domain)
 
-    record = balancer.add_record(appname, entrypoint, domain)
-    update_record(balancer, record)
+    balancer.add_record(appname, entrypoint, domain)
     _push_to_today_task('add_record', request.form)
     return redirect(url_for('lb.records', balancer_id=balancer_id))
 
 
 @bp.route('/api/<int:balancer_id>', methods=['DELETE'])
 @json_api
+@demand_login
 def delete_balancer(balancer_id):
     balancer = Balancer.query.get_or_404(balancer_id)
+    if g.user.id != balancer.user_id:
+        return {'msg': 'forbidden'}, 403
+
     eru.remove_containers([balancer.container_id])
     _push_to_today_task('delete', {'balancer': balancer.id,
                                    'container': balancer.container_id})
     balancer.delete()
+
+
+@bp.route('/api/record/<int:record_id>', methods=['DELETE'])
+@json_api
+@demand_login
+def delete_record(record_id):
+    record = BalanceRecord.get(record_id)
+    if not record:
+        return {'msg': 'not found'}, 404
+
+    if g.user.id != record.balancer.user_id:
+        return {'msg': 'forbidden'}, 403
+
+    record.delete()
 
 
 @bp.route('/audit/')

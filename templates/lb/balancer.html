@@ -14,7 +14,8 @@
             <th>#</th>
             <th>appname</th>
             <th>entrypoint</th>
-            <th>domain</th>
+            <th>domain (routed to)</th>
+            <th>action</th>
         </tr>
         {% for r in b.get_records() %}
         <tr>
@@ -22,6 +23,11 @@
             <td>{{ r.appname }}</td>
             <td>{{ r.entrypoint }}</td>
             <td>{{ r.domain }}</td>
+            <td>
+                <button class="btn btn-danger btn-toggle-next btn-xs btn-delete" data-id="{{r.id}}">
+                    <i class="fa fa-trash">删除</i>
+                </button>
+            </td>
         </tr>
         {% endfor %}
     </table>
@@ -67,6 +73,21 @@ $('#appname').change(function() {
         var ep = $('#entrypoints').html('');
         for (var i = 0; i < r.length; ++i) {
             ep.append($('<option>').val(r[i]).text(r[i]));
+        }
+    });
+});
+
+$('.btn-delete').click(function (){
+    if (!confirm('确认要删除么?')) {
+        return;
+    }
+    var btn = $(this);
+    btn.parent().parent().remove();
+    $.ajax({
+        url: '/lb/api/record/' + btn.data('id'),
+        type: 'DELETE',
+        success: function (){
+            btn.parent().parent().remove();
         }
     });
 });

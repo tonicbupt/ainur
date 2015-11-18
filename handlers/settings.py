@@ -31,7 +31,7 @@ def add_image():
 @bp.route('/api/del_image', methods=['POST'])
 @json_api
 def del_image():
-    BaseImage.delete(int(request.form['id']))
+    BaseImage.delete_by_id(int(request.form['id']))
     _reset_images_cache()
 
 

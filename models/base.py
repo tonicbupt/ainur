@@ -20,8 +20,12 @@ class Base(db.Model):
         db.session.commit()
 
     @classmethod
-    def delete(cls, oid):
-        db.session.delete(cls.query.get(oid))
+    def get(cls, id):
+        return cls.query.get(id)
+
+    @classmethod
+    def delete_by_id(cls, oid):
+        cls.query.filter_by(id=oid).delete()
         db.session.commit()
 
     @classmethod
