@@ -38,10 +38,9 @@
                 </a>
                 {% endif %}
 
-                <button class="btn btn-danger btn-toggle-next btn-xs">
+                <button class="btn btn-danger btn-toggle-next btn-xs btn-delete" data-id="{{b.id}}">
                     <i class="fa fa-trash"></i> 下线
                 </button>
-                <button class="btn btn-danger btn-xs btn-delete" data-id='{{ b.id }}'>确定下线</button>
             </td>
         </tr>
         {% endfor %}
@@ -72,6 +71,9 @@ $('#projectName').keyup(function(event) {
 });
 
 $('.btn-delete').click(function() {
+    if (!confirm('确定要删除?')) {
+        return;
+    }
     var btn = $(this);
     $.ajax({
         url: '/lb/api/' + btn.data('id'),
