@@ -1,48 +1,81 @@
-{% extends './settings/base.html' %}
+{% extends "/settings/base.html" %}
 
 {% block main_view %}
 <div class="panel panel-default content-margin-top">
-    <div class="panel-heading">
-        <ul class="breadcrumb">
-            <li><a href='/settings/users/'>用户管理</a></li>
-            <li class="active">{{ who.realname|e }}</li>
-        </ul>
-    </div>
-    <div class="panel-body">
+  <div class="panel-heading">
+    <ul class="breadcrumb">
+      <li><a href='/settings/users/'>用户管理</a></li>
+      <li class="active">{{ user.realname }}</li>
+    </ul>
+  </div>
+  <div class="panel-body">
+
+    <div class="panel panel-info">
+      <div class="panel-heading">权限/组设置</div>
+      <div class="panel-body">
         <form class="form-horizontal form-submit" data-url='/settings/api/users/setting' data-method='POST'>
-            <div class="form-group">
-                <label for="input-ip" class="col-sm-1 control-label">用户 UID</label>
-                <div class="col-sm-10">
-                    <input type="text" name='uid' class="form-control" readonly="readonly" value='{{ who.uid|e }}'>
-                </div>
+          <div class="form-group">
+            <label for="input-ip" class="col-sm-1 control-label">用户 UID</label>
+            <div class="col-sm-10">
+              <input type="text" name='uid' class="form-control" readonly="readonly" value='{{ user.uid }}'>
             </div>
+          </div>
 
-            <div class="form-group">
-                <label for="input-ip" class="col-sm-1 control-label">组</label>
-                <div class="col-sm-10">
-                    <input type="text" name='group' class="form-control" value='{{ (who.group or '')|e }}' placeholder='如: platform'>
-                </div>
+          <div class="form-group">
+            <label for="input-ip" class="col-sm-1 control-label">组</label>
+            <div class="col-sm-10">
+              <input type="text" name='group' class="form-control" value='{{ user.group or '' }}' placeholder='如: platform'>
             </div>
+          </div>
 
-            <div class="form-group">
-                <label for="input-ip" class="col-sm-1 control-label">权限</label>
-                <div class="col-sm-10">
-                    <label class='checkbox-inline'>
-                        <input type="checkbox" name='privs' value='admin' {% if who.is_admin %}checked{% endif %}>管理员
-                    </label>
-                    <label class='checkbox-inline'>
-                        <input type="checkbox" name='privs' value='lb' {% if who.is_lb_mgr %}checked{% endif %}>负载均衡配置
-                    </label>
-                </div>
+          <div class="form-group">
+            <label for="input-ip" class="col-sm-1 control-label">权限</label>
+            <div class="col-sm-10">
+              <label class='checkbox-inline'>
+                <input type="checkbox" name='privs' value='admin' {{'checked' if user.is_admin() else ''}}>管理员
+              </label>
+              <label class='checkbox-inline'>
+                <input type="checkbox" name='privs' value='lb' {{'checked' if user.is_lb_mgr() else ''}}>负载均衡配置
+              </label>
             </div>
+          </div>
 
-            <div class="form-group">
-                <div class="col-sm-offset-1 col-sm-11">
-                    <button type="button" class="btn btn-primary submitter" id='deployContainer'>设置</button>
-                </div>
+          <div class="form-group">
+            <div class="col-sm-offset-1 col-sm-11">
+              <button type="button" class="btn btn-primary submitter" id='deployContainer'>设置</button>
             </div>
+          </div>
         </form>
+      </div>
     </div>
+
+    <hr>
+    <div class="panel panel-info">
+      <div class="panel-heading">可以操作的项目列表</div>
+      <div class="panel-body">
+        <ul class="list list-group">
+          {% for p in user.get_accessible_projects(limit=100) %}
+          <li class="list-group-item">{{p.name}}</li>
+          {% endfor %}
+        </ul>
+      </div>
+
+      <form class="form-horizontal form-submit" data-url="{{url_for('settings.grant_project', uid=user.uid)}}" data-method="POST">
+        <div class="form-group">
+          <label class="control-label col-sm-1" for="">项目名</label>
+          <div class="col-sm-10">
+            <input type="text" name="project" class="form-control">
+          </div>
+        </div>
+        <div class="form-group">
+          <div class="col-sm-offset-1 col-sm-11">
+            <button type="button" class="btn btn-primary submitter">设置</button>
+          </div>
+        </div>
+      </form>
+    </div>
+
+  </div>
 </div>
 {% endblock %}
 

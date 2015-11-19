@@ -24,6 +24,10 @@ class Base(db.Model):
         return cls.query.get(id)
 
     @classmethod
+    def get_multi(cls, ids):
+        return filter(None, [cls.get(i) for i in ids])
+
+    @classmethod
     def delete_by_id(cls, oid):
         cls.query.filter_by(id=oid).delete()
         db.session.commit()

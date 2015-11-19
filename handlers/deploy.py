@@ -7,8 +7,7 @@ from redis.exceptions import RedisError
 from eruhttp import EruException
 
 from config import APPNAME_ERU_LB
-from utils import (json_api, post_form, parse_git_url, not_found, demand_login,
-                   SIX_MONTHS)
+from utils import json_api, post_form, parse_git_url, not_found, SIX_MONTHS
 from clients import gitlab, eru
 from .ext import rds, safe_rds_get, safe_rds_set
 
@@ -17,12 +16,11 @@ bp = Blueprint('deploy', __name__, url_prefix='/deploy')
 
 @bp.route('/')
 def deploy():
-    return render_template('deploy/index.html', page=g.page,
-                           projects=eru.list_apps(g.start, g.limit))
+    projects = g.user.get_accessible_projects(start=g.start, limit=g.limit)
+    return render_template('deploy/index.html', page=g.page, projects=projects)
 
 
 @bp.route('/audit/logs')
-@demand_login
 def audit_logs():
     dt = request.query_string or date.today().strftime('%Y-%m-%d')
     return render_template('deploy/audit/logs.html', date=dt, logs=[
@@ -86,7 +84,6 @@ def _register_app(repo_url, commit_id=None):
 
 
 @bp.route('/projects/new')
-@demand_login
 def projects_new():
     return render_template('deploy/projects/new.html')
 
@@ -95,7 +92,7 @@ def projects_new():
 def project_detail(project_name):
     try:
         project = eru.get_app(project_name)
-    except EruException as e:
+    except EruException:
         return render_template(
             'deploy/projects/detail_notfound.html', project=project_name), 404
     return render_template('deploy/projects/detail.html', project=project)
@@ -110,7 +107,6 @@ def project_images_tasks(project_name):
 
 
 @bp.route('/projects/build_image/<project_name>')
-@demand_login
 def project_build_image_entry(project_name):
     app = eru.get_app(project_name)
     try:
@@ -131,7 +127,6 @@ def project_environments(project_name):
 
 
 @bp.route('/projects/envs/<project_name>/<env_name>')
-@demand_login
 def project_env_detail(project_name, env_name):
     return render_template(
         'deploy/projects/env_detail.html',
@@ -140,7 +135,6 @@ def project_env_detail(project_name, env_name):
 
 
 @bp.route('/projects/containers/<project_name>')
-@demand_login
 def project_containers(project_name):
     return render_template(
         'deploy/projects/containers.html',
@@ -155,7 +149,6 @@ def _get_user_group():
 
 
 @bp.route('/projects/deploy_container/<project_name>')
-@demand_login
 def project_deploy_container(project_name):
     images = eru.list_app_images(project_name)
     image_names = [i['image_url'] for i in images]
@@ -180,7 +173,6 @@ def pod_hosts(pod_name):
 
 
 @bp.route('/hosts/<host_name>/containers/')
-@demand_login
 def host_containers(host_name):
     host = eru.get_host(host_name)
     if host is None:
@@ -193,14 +185,12 @@ def host_containers(host_name):
 
 
 @bp.route('/api/groups')
-@demand_login
 @json_api
 def deploy_groups():
     return [[g['id'], g['name']] for g in eru.list_groups()]
 
 
 @bp.route('/api/projects/register', methods=['POST'])
-@demand_login
 @json_api
 def register_project():
     args = post_form()
@@ -209,14 +199,12 @@ def register_project():
 
 
 @bp.route('/api/pods')
-@demand_login
 @json_api
 def list_pods():
     return [p['name'] for p in eru.list_pods()]
 
 
 @bp.route('/api/pods/<pod_name>/list_hosts')
-@demand_login
 @json_api
 def list_hosts_in_pod(pod_name):
     return eru.list_pod_hosts(pod_name, g.start, g.limit)
@@ -234,7 +222,6 @@ def _push_to_today_task(act, args):
 
 
 @bp.route('/api/projects/build_image', methods=['POST'])
-@demand_login
 @json_api
 def project_build_image():
     args = post_form()
@@ -243,7 +230,7 @@ def project_build_image():
     app = eru.get_app(args['project'])
     revision = args['revision']
     _register_app(app['git'], revision)
-    project = _get_project(app['git'])
+    _get_project(app['git'])
     pod = args['pod']
     group = _get_user_group()
     image = 'docker-registry.intra.hunantv.com/nbeimage/%s' % args['image']
@@ -254,7 +241,6 @@ def project_build_image():
 
 
 @bp.route('/api/revision/list_entrypoints', methods=['GET'])
-@demand_login
 @json_api
 def revision_list_entrypoints():
     project = _get_project(eru.get_app(request.args['project'])['git'])
@@ -270,7 +256,6 @@ def _lastest_version_sha(what):
 
 
 @bp.route('/api/revision/list_entrypoints_for_latest_ver', methods=['GET'])
-@demand_login
 @json_api
 def revision_list_entrypoints_for_latest_ver():
     p = request.args['project']
@@ -280,7 +265,6 @@ def revision_list_entrypoints_for_latest_ver():
 
 
 @bp.route('/api/projects/deploy_container', methods=['POST'])
-@demand_login
 @json_api
 def project_deploy_container_api():
     args = request.form
@@ -304,7 +288,6 @@ def project_deploy_container_api():
 
 
 @bp.route('/api/containers', methods=['GET'])
-@demand_login
 @json_api
 def get_containers():
     appname = request.args.get('app', '')
@@ -318,7 +301,6 @@ def get_containers():
 
 
 @bp.route('/api/projects/save_env', methods=['POST'])
-@demand_login
 @json_api
 def set_project_env():
     args = post_form()
@@ -337,14 +319,12 @@ def set_project_env():
 
 
 @bp.route('/api/tasklog/<int:task_id>')
-@demand_login
 @json_api
 def get_task_log(task_id):
     return eru.get_task_log(task_id)
 
 
 @bp.route('/api/containers/stop', methods=['POST'])
-@demand_login
 @json_api
 def stop_container():
     cid = post_form()['id']
@@ -356,7 +336,6 @@ def stop_container():
 
 
 @bp.route('/api/containers/start', methods=['POST'])
-@demand_login
 @json_api
 def start_container():
     cid = post_form()['id']
@@ -366,7 +345,6 @@ def start_container():
 
 
 @bp.route('/api/containers/remove', methods=['POST'])
-@demand_login
 @json_api
 def rm_container():
     cid = post_form()['id']

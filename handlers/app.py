@@ -1,6 +1,8 @@
+# coding: utf-8
+
 import os
 from cStringIO import StringIO
-from flask import Flask, g, request, render_template
+from flask import Flask, g, request, render_template, abort
 from werkzeug.utils import import_string
 
 from config import REDIS_HOST, REDIS_PORT, SQLALCHEMY_DATABASE_URI
@@ -65,6 +67,8 @@ def create_app():
 
         user_info = safe_rds_hgetall('user_session:%s' % request.cookies.get('idkey'))
         g.user = User.get_by_uid(user_info['uid']) if user_info else None
+        if not g.user:
+            abort(401)
 
     @app.errorhandler(403)
     @app.errorhandler(401)
