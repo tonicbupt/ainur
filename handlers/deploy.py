@@ -290,7 +290,7 @@ def project_deploy_container_api():
     eru.deploy_private(
         group_name=_get_user_group(),
         pod_name=args['pod'],
-        app_name=args['project'],
+        app_name=project,
         ncore=float(args['ncore']),
         ncontainer=int(args['ncontainer']),
         version=args['version'],
@@ -348,6 +348,8 @@ def get_task_log(task_id):
 @json_api
 def stop_container():
     cid = post_form()['id']
+    if eru.get_container(cid)['appname'] == APPNAME_ERU_LB:
+        raise ValueError('Unable to stop eru-lb, do it on load balance page')
     logging.info('Stop container %s', cid)
     eru.stop_container(cid)
     _push_to_today_task('stop', cid)
@@ -368,6 +370,8 @@ def start_container():
 @json_api
 def rm_container():
     cid = post_form()['id']
+    if eru.get_container(cid)['appname'] == APPNAME_ERU_LB:
+        raise ValueError('Unable to remove eru-lb, do it on load balance page')
     logging.info('Remove container %s', cid)
     eru.remove_containers([cid])
     _push_to_today_task('remove', cid)

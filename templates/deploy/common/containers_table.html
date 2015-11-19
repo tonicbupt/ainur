@@ -43,8 +43,7 @@
             {% else %}
             <button class='btn btn-primary btn-ctl' data-ctl='start' data-container-id='{{ c.container_id }}'>启动</button>
             {% endif %}
-            <button class='btn btn-danger btn-toggle-next'>下线</button>
-            <button class='btn btn-danger btn-ctl' data-ctl='remove' data-container-id='{{ c.container_id }}'>确认下线</button>
+            <button class='btn btn-danger btn-ctl' data-ctl='remove' data-container-id='{{ c.container_id }}' data-confirm='1'>下线</button>
         </td>
     </tr>
     {% endfor %}
@@ -52,9 +51,12 @@
 
 <script>
 $('.btn-ctl').click(function() {
-    var btn = $(this).attr('disabled', 'disabled');
+    var btn = $(this);
+    if (btn.data('confirm') && !confirm('确定要下线这个容器么?')) {
+        return;
+    }
     $.post('/deploy/api/containers/' + btn.data('ctl'), {id: btn.data('container-id')}, function() {
         window.location.reload();
-    });
+    }).error(function(e) { alert('错误: ' + e.responseText); });
 });
 </script>
