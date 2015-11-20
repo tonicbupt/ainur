@@ -1,8 +1,8 @@
-{% extends './lb/base.html' %}
-{% import 'common/audit_table.html' as audit_table %}
+{% extends "/lb/base.html" %}
+{% import "/common/oplog.html" as oplog %}
 
 {% block main_view %}
-{{ audit_table.display(date, logs) }}
+{{ oplog.show(logs) }}
 {% endblock %}
 
 {% block page_css %}

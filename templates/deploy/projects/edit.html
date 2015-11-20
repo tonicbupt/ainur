@@ -1,20 +1,19 @@
 <div class="panel panel-default content-margin-top">
-    <div class="panel-heading">
-        <ul class="breadcrumb">
-            <li><a ui-sref="projectIndex">项目列表</a>
-            </li>
-            <li class="active">{{ project.name }} 编辑</li>
-        </ul>
-    </div>
-    <div class="panel-body">
-        <form name="projectEditForm" class="form-horizontal">
-            <ng-include src="'projects/_form.html'"></ng-include>
+  <div class="panel-heading">
+    <ul class="breadcrumb">
+      <li><a ui-sref="projectIndex">项目列表</a></li>
+      <li class="active">{{ project.name }} 编辑</li>
+    </ul>
+  </div>
+  <div class="panel-body">
+    <form name="projectEditForm" class="form-horizontal">
+      <ng-include src="'projects/_form.html'"></ng-include>
 
-            <div class="form-group">
-                <div class="col-sm-offset-1 col-sm-10">
-                    <button type="button" class="btn btn-primary" ng-click="projectUpdateSave()" validation-submit="projectEditForm" ng-disabled="!loadStatus.project || loadStatus.updating">更新</button>
-                </div>
-            </div>
-        </form>
-    </div>
+      <div class="form-group">
+        <div class="col-sm-offset-1 col-sm-10">
+          <button type="button" class="btn btn-primary" ng-click="projectUpdateSave()" validation-submit="projectEditForm" ng-disabled="!loadStatus.project || loadStatus.updating">更新</button>
+        </div>
+      </div>
+    </form>
+  </div>
 </div>

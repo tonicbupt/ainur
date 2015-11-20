@@ -1,4 +1,4 @@
-{% extends './base.html' %}
+{% extends "/base.html" %}
 
 {% block title %}Ainur{% endblock %}
 
@@ -9,29 +9,26 @@
 
 {%- block body %}
 <div class="container">
-    <div class="top clearfix">
-        {%- if g.user %}
-        <dl>
-            <dt class='clearfix'>
-                <h4>
-                    <a href='/user/me'>
-                        <span class="glyphicon glyphicon-user" aria-hidden="true"></span>
-                        {{ g.user.realname }}
-                    </a>
-                </h4>
-            </dt>
-        </dl>
-        {% endif %}
-    </div>
-    <div class="main">
-        <ul class="main_list">
-            <li>
-                <a href="/deploy/"><h3>Deploy</h3></a>
-            </li>
-            <li>
-                <a href="/lb/"><h3>Load Balance</h3></a>
-            </li>
-        </ul>
-    </div>
+  <div class="top clearfix">
+    {%- if g.user %}
+    <dl>
+      <dt class='clearfix'>
+      <h4>
+        <a href='/user/me'>
+          <span class="glyphicon glyphicon-user" aria-hidden="true"></span>
+          {{ g.user.realname }}
+        </a>
+      </h4>
+      </dt>
+    </dl>
+    {% endif %}
+  </div>
+  <div class="main">
+    <ul class="main_list">
+      <li><a href="{{ url_for('deploy.deploy') }}"><h3>Deploy</h3></a></li>
+      <li><a href="{{ url_for('lb.index') }}"><h3>Load Balance</h3></a></li>
+      <li><a href="{{ url_for('settings.index') }}"><h3>Settings</h3></a></li>
+    </ul>
+  </div>
 </div>
 {% endblock %}

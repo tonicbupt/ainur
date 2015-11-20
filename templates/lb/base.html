@@ -1,26 +1,29 @@
-{% extends './base.html' %}
+{% extends "/base.html" %}
 
 {% block title %}负载均衡{% endblock %}
 
 {% block body %}
 <nav class="navbar navbar-inverse navbar-fixed-top">
-    <div class=container-fluid>
-        <div class=navbar-header>
-            <button type=button class="navbar-toggle collapsed" data-toggle=collapse data-target=#navbar aria-expanded=false aria-controls=navbar>
-                <span class=sr-only>Toggle navigation</span> <span class=icon-bar></span> <span class=icon-bar></span>
-                <span class=icon-bar></span>
-            </button>
-            <a class=navbar-brand href='/'>Ainur</a>
-        </div>
-        <div id=navbar class="collapse navbar-collapse">
-            <ul class="nav navbar-nav">
-                <li><a href='/lb/'>配置总览</a></li>
-                <li><a href='/lb/balancers/'>均衡容器</a> </li>
-                <li><a href='/lb/audit/'>操作日志</a> </li>
-            </ul>
-            {% include 'common/user.html' %}
-        </div>
+  <div class=container-fluid>
+    <div class=navbar-header>
+      <button type=button class="navbar-toggle collapsed" data-toggle=collapse data-target=#navbar aria-expanded=false aria-controls=navbar>
+        <span class=sr-only>Toggle navigation</span> <span class=icon-bar></span> <span class=icon-bar></span>
+        <span class=icon-bar></span>
+      </button>
+      <a class=navbar-brand href='/'>Ainur</a>
     </div>
+    <div id=navbar class="collapse navbar-collapse">
+      <ul class="nav navbar-nav">
+        <li><a href="{{ url_for('lb.index') }}">负载均衡</a></li>
+        <li><a href="{{ url_for('lb.oplog') }}">操作日志</a> </li>
+      </ul>
+      {% include "/common/user.html" %}
+    </div>
+  </div>
 </nav>
-<div class=container-fluid>{% block main_view %}{% endblock %}</div>
+
+<div class=container-fluid>
+  {% block main_view %}
+  {% endblock %}
+</div>
 {% endblock %}

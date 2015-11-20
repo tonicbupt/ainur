@@ -1,16 +1,16 @@
 # coding: utf-8
 
 import logging
-import json
-from datetime import date, datetime
+from datetime import datetime
 from retrying import retry
 from flask import render_template, Blueprint, request, g, url_for, abort, redirect
 
+from libs.clients import eru
+from libs.utils import demand_login, json_api
 from config import APPNAME_ERU_LB
-from clients import eru
-from utils import demand_login, json_api, SIX_MONTHS
-from models.balancer import Balancer, update_record
-from .ext import rds
+from models.oplog import OPLog
+from models.consts import OPLOG_ACTION, OPLOG_KIND
+from models.balancer import Balancer, BalanceRecord
 
 bp = Blueprint('lb', __name__, url_prefix='/lb')
 
@@ -19,17 +19,6 @@ bp = Blueprint('lb', __name__, url_prefix='/lb')
 def index():
     balancers = Balancer.get_by_user(g.user.id)
     return render_template('lb/index.html', balancers=balancers)
-
-
-def _push_to_today_task(act, args):
-    task_key = date.today().strftime('lbaudit:%Y-%m-%d')
-    rds.lpush(task_key, json.dumps({
-        'time': datetime.now().strftime('%H:%M:%S'),
-        'user': g.user.uid,
-        'act': act,
-        'args': args,
-    }))
-    rds.expire(task_key, SIX_MONTHS)
 
 
 @json_api
@@ -41,8 +30,12 @@ def _create_lb_container(args):
         args['env'], args['host'])
 
     container = eru.get_container(container_id)
-    Balancer.create(container['host'], g.user.group, g.user.id, container_id)
-    _push_to_today_task('create', request.form)
+    b = Balancer.create(container['host'], g.user.group, g.user.id, container_id)
+
+    log = OPLog.create(g.user.id, OPLOG_ACTION.create_balancer)
+    log.container_id = container_id
+    log.balancer_id = b.id
+    log.data = args
 
 
 @bp.route('/create', methods=['GET', 'POST'])
@@ -51,44 +44,84 @@ def create():
         images = eru.list_app_images(APPNAME_ERU_LB)
         image_names = [i['image_url'] for i in images]
         return render_template(
-            'lb/create.html', appname=APPNAME_ERU_LB, images=image_names,
+            '/lb/create.html', appname=APPNAME_ERU_LB, images=image_names,
             envs=eru.list_app_env_names(APPNAME_ERU_LB)['data'],
             pods=eru.list_pods())
+
     return _create_lb_container(request.form)
 
 
 @bp.route('/<int:balancer_id>/records', methods=['GET', 'POST'])
 def records(balancer_id):
-    balancer = Balancer.query.get_or_404(balancer_id)
+    balancer = Balancer.get(balancer_id)
+    if not balancer:
+        abort(404)
+
     if request.method == 'GET':
         return render_template('lb/balancer.html', b=balancer)
 
     appname = request.form['appname']
     domain = request.form['domain']
     entrypoint = request.form['entrypoint']
-    logging.debug('Add record for %s:%s @ %s', appname, entrypoint, domain)
 
-    record = balancer.add_record(appname, entrypoint, domain)
-    update_record(balancer, record)
-    _push_to_today_task('add_record', request.form)
+    r = balancer.add_record(appname, entrypoint, domain)
+
+    log = OPLog.create(g.user.id, OPLOG_ACTION.create_lb_record)
+    log.balancer_id = balancer_id
+    log.record_id = r.id
+    log.data = {'domain': domain, 'appname': appname, 'entrypoint': entrypoint}
+
     return redirect(url_for('lb.records', balancer_id=balancer_id))
 
 
 @bp.route('/api/<int:balancer_id>', methods=['DELETE'])
 @json_api
+@demand_login
 def delete_balancer(balancer_id):
-    balancer = Balancer.query.get_or_404(balancer_id)
+    balancer = Balancer.get(balancer_id)
+    if not balancer:
+        abort(404)
+
+    if g.user.id != balancer.user_id:
+        return {'msg': 'forbidden'}, 403
+
     eru.remove_containers([balancer.container_id])
-    _push_to_today_task('delete', {'balancer': balancer.id,
-                                   'container': balancer.container_id})
     balancer.delete()
 
+    log = OPLog.create(g.user.id, OPLOG_ACTION.delete_balancer)
+    log.balancer_id = balancer_id
+    log.container_id = balancer.container_id
 
-@bp.route('/audit/')
-def audit_logs():
-    dt = request.query_string or date.today().strftime('%Y-%m-%d')
-    return render_template('lb/audit.html', date=dt, logs=[
-        json.loads(x) for x in rds.lrange('lbaudit:%s' % dt, 0, -1)])
+
+@bp.route('/api/record/<int:record_id>', methods=['DELETE'])
+@json_api
+@demand_login
+def delete_record(record_id):
+    r = BalanceRecord.get(record_id)
+    if not r:
+        return {'msg': 'not found'}, 404
+
+    if g.user.id != r.balancer.user_id:
+        return {'msg': 'forbidden'}, 403
+
+    r.delete()
+
+    log = OPLog.create(g.user.id, OPLOG_ACTION.delete_lb_record)
+    log.balancer_id = r.balancer_id
+    log.record_id = record_id
+    log.data = {'domain': r.domain, 'appname': r.appname, 'entrypoint': r.entrypoint}
+
+
+@bp.route('/oplog/')
+def oplog():
+    date = request.args.get('date', None)
+    if date:
+        date = datetime.strptime(date, '%Y-%m-%d')
+    # FIXME
+    date = None
+    logs = OPLog.get_by_user_id(g.user.id, kind=OPLOG_KIND.balancer,
+            time=date, start=g.start, limit=g.limit)
+    return render_template('/lb/logs.html', logs=logs)
 
 
 @bp.before_request

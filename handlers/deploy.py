@@ -1,151 +1,130 @@
+# coding: utf-8
+
 import yaml
-import json
-import logging
-from datetime import date, datetime
-from flask import render_template, Blueprint, request, g
-from redis.exceptions import RedisError
+
 from eruhttp import EruException
+from flask import render_template, Blueprint, request, g, abort
 
 from config import APPNAME_ERU_LB
-from utils import (json_api, post_form, parse_git_url, not_found, demand_login,
-                   SIX_MONTHS)
-from clients import gitlab, eru
-from .ext import rds, safe_rds_get, safe_rds_set
+from libs.utils import json_api, parse_git_url
+from libs.clients import gitlab, eru
+
+from models.image import BaseImage
+from models.oplog import OPLog
+from models.project import Project
+from models.consts import OPLOG_ACTION, OPLOG_KIND
+
 
 bp = Blueprint('deploy', __name__, url_prefix='/deploy')
 
 
 @bp.route('/')
 def deploy():
-    return render_template('deploy/index.html', page=g.page,
-                           projects=eru.list_apps(g.start, g.limit))
+    projects = g.user.get_accessible_projects(start=g.start, limit=g.limit)
+    return render_template('/deploy/index.html', projects=projects)
 
 
-@bp.route('/audit/logs')
-@demand_login
-def audit_logs():
-    dt = request.query_string or date.today().strftime('%Y-%m-%d')
-    return render_template('deploy/audit/logs.html', date=dt, logs=[
-        json.loads(x) for x in rds.lrange('task:%s' % dt, 0, -1)])
+@bp.route('/oplog/')
+def oplog():
+    logs = OPLog.get_by_user_id(g.user.id, kind=OPLOG_KIND.project, start=g.start, limit=g.limit)
+    return render_template('/deploy/logs.html', logs=logs)
 
 
 def _get_project(repo_url):
-    logging.debug('Get repo %s', repo_url)
     repo = parse_git_url(repo_url)
-    logging.debug('Get project %s', repo)
-
-    rds_key = 'project:%s' % repo
-    project = safe_rds_get(rds_key)
-    if project is not None:
-        logging.debug('Hit project cache %s', repo)
-        return project
-
     project = gitlab.getproject(repo)
     if not project:
-        raise ValueError('no such repository %s' % repo_url)
-
-    safe_rds_set(rds_key, project)
+        return None
     return project
 
 
 def _get_project_commits(repo_url):
     project = _get_project(repo_url)
+    if not project:
+        return []
     return gitlab.getrepositorycommits(project['id'], page=0)
 
 
 def _get_rev_appyaml(project_id, commit_id):
-    rds_key = 'appyaml:%s:%s' % (project_id, commit_id[:7])
-    appyaml = safe_rds_get(rds_key)
-    if appyaml is not None:
-        logging.debug('Hit appyaml cache %s/%s', project_id, commit_id)
-        return appyaml
     appyaml = gitlab.getrawfile(project_id, commit_id, 'app.yaml')
     if not appyaml:
-        raise ValueError('no app.yaml in %s' % project_id)
-    appyaml = yaml.load(appyaml)
-    safe_rds_set(rds_key, appyaml)
-    return appyaml
+        return {}
+    return yaml.load(appyaml)
 
 
 def _register_app(repo_url, commit_id=None):
     project = _get_project(repo_url)
-    logging.debug('Get app.yaml for %s:%s', project['id'],
-                  project['name_with_namespace'])
     if commit_id is None:
         commits = gitlab.getrepositorycommits(project['id'], ref_name='master',
                                               page=0, per_page=1)
         if len(commits) == 0:
             raise ValueError('Project %s has no commits' % repo_url)
+
         commit_id = commits[0]['id']
+
     appconfig = _get_rev_appyaml(project['id'], commit_id)
-    logging.debug('Loaded app.yaml for %s', appconfig['appname'])
-    logging.info('Register app=%s commit=%s repo=%s', appconfig['appname'],
-                 commit_id, repo_url)
+    if not appconfig:
+        raise ValueError('app.yaml of %s is empty' % repo_url)
+
     eru.register_app_version(commit_id, repo_url, '', appconfig)
     return appconfig
 
 
-@bp.route('/projects/new')
-@demand_login
-def projects_new():
-    return render_template('deploy/projects/new.html')
+@bp.route('/project/new')
+def new():
+    return render_template('/deploy/projects/new.html')
 
 
-@bp.route('/projects/detail/<project_name>')
-def project_detail(project_name):
-    try:
-        project = eru.get_app(project_name)
-    except EruException as e:
-        return render_template(
-            'deploy/projects/detail_notfound.html', project=project_name), 404
-    return render_template('deploy/projects/detail.html', project=project)
+@bp.route('/project/<name>/detail/')
+def detail(name):
+    project = Project.get_by_name(name)
+    if not project:
+        abort(404)
+    return render_template('/deploy/projects/detail.html', project=project)
 
 
-@bp.route('/projects/images/<project_name>')
-def project_images_tasks(project_name):
+@bp.route('/project/<name>/tasks/')
+def tasks(name):
+    tasks = eru.list_app_tasks(name, g.start, g.limit)
+    tasks = tasks['tasks']
+    return render_template('/deploy/projects/images_tasks.html', tasks=tasks, name=name)
+
+
+@bp.route('/project/<name>/build_image/')
+def build_image(name):
+    project = Project.get_by_name(name)
+    if not project:
+        abort(404)
+
+    revisions = _get_project_commits(project.git)
+    pods = eru.list_pods()
+    base_images = BaseImage.list_all()
     return render_template(
-        'deploy/projects/images_tasks.html', page=g.page,
-        tasks=eru.list_app_tasks(project_name, g.start, g.limit)['tasks'],
-        project_name=project_name)
+        '/deploy/projects/build_image.html', project=project,
+        revisions=revisions, pods=pods, base_images=base_images)
 
 
-@bp.route('/projects/build_image/<project_name>')
-@demand_login
-def project_build_image_entry(project_name):
-    app = eru.get_app(project_name)
-    try:
-        return render_template(
-            'deploy/projects/build_image.html', project=app,
-            revisions=_get_project_commits(app['git']), pods=eru.list_pods(),
-            base_images=rds.lrange('base_images', 0, -1))
-    except RedisError as e:
-        return 'Unable to list base images, Redis is down: %s' % e, 500
+@bp.route('/project/<name>/envs/')
+def environments(name):
+    envs = eru.list_app_env_names(name)
+    envs = envs['data']
+    return render_template('/deploy/projects/envs.html', envs=envs, name=name)
 
 
-@bp.route('/projects/envs/<project_name>')
-def project_environments(project_name):
-    return render_template(
-        'deploy/projects/envs.html',
-        envs=eru.list_app_env_names(project_name)['data'],
-        project_name=project_name)
+@bp.route('/project/<name>/envs/<env_name>/')
+def env_detail(name, env_name):
+    env_content = eru.list_app_env_content(name, env_name)
+    env_content = env_content['data']
+    return render_template('/deploy/projects/env_detail.html',
+            env_content=env_content, name=name, env_name=env_name)
 
 
-@bp.route('/projects/envs/<project_name>/<env_name>')
-@demand_login
-def project_env_detail(project_name, env_name):
-    return render_template(
-        'deploy/projects/env_detail.html',
-        env_content=eru.list_app_env_content(project_name, env_name)['data'],
-        project_name=project_name, env_name=env_name)
-
-
-@bp.route('/projects/containers/<project_name>')
-@demand_login
-def project_containers(project_name):
-    return render_template(
-        'deploy/projects/containers.html',
-        containers=eru.list_app_containers(project_name)['containers'],
-        project_name=project_name)
+@bp.route('/projects/<name>/containers/')
+def containers(name):
+    containers = eru.list_app_containers(name)
+    containers = containers['containers']
+    return render_template('/deploy/projects/containers.html',
+            containers=containers, name=name)
 
 
 def _get_user_group():
@@ -154,22 +133,24 @@ def _get_user_group():
     return 'platform'
 
 
-@bp.route('/projects/deploy_container/<project_name>')
-@demand_login
-def project_deploy_container(project_name):
-    images = eru.list_app_images(project_name)
+@bp.route('/projects/<name>/deploy/')
+def deploy_container(name):
+    images = eru.list_app_images(name)
     image_names = [i['image_url'] for i in images]
-    return render_template(
-        'deploy/projects/deploy_container.html', images=image_names,
-        envs=eru.list_app_env_names(project_name)['data'],
-        pods=eru.list_group_pods(_get_user_group()), project_name=project_name,
-        networks=eru.list_network())
+
+    envs = eru.list_app_env_names(name)['data']
+    pods = eru.list_group_pods(g.user.group)
+    networks = eru.list_network()
+
+    return render_template('/deploy/projects/deploy_container.html',
+            images=image_names, envs=envs, pods=pods, name=name,
+            networks=networks)
 
 
 @bp.route('/pods/')
 def pods_list():
-    return render_template('deploy/pods/index.html', page=g.page,
-                           pods=eru.list_pods(g.start, g.limit))
+    pods = eru.list_pods(g.start, g.limit)
+    return render_template('/deploy/pods/index.html', pods=pods)
 
 
 @bp.route('/pods/<pod_name>/hosts/')
@@ -180,11 +161,11 @@ def pod_hosts(pod_name):
 
 
 @bp.route('/hosts/<host_name>/containers/')
-@demand_login
 def host_containers(host_name):
     host = eru.get_host(host_name)
     if host is None:
-        return not_found()
+        abort(404)
+
     return render_template(
         'deploy/pods/host_containers.html', page=g.page, host_name=host_name,
         pod_name=eru.get_pod(host['pod_id'])['name'],
@@ -193,68 +174,54 @@ def host_containers(host_name):
 
 
 @bp.route('/api/groups')
-@demand_login
 @json_api
 def deploy_groups():
     return [[g['id'], g['name']] for g in eru.list_groups()]
 
 
 @bp.route('/api/projects/register', methods=['POST'])
-@demand_login
 @json_api
-def register_project():
-    args = post_form()
-    app = _register_app(args['repo_url'])
-    return app['appname']
+def api_register():
+    repo_url = request.form['repo_url']
+    app = _register_app(repo_url)
+    project_name = app['name']
+
+    log = OPLog.create(g.user.id, OPLOG_ACTION.create_project)
+    log.project_name = project_name
+    return project_name
 
 
 @bp.route('/api/pods')
-@demand_login
 @json_api
 def list_pods():
     return [p['name'] for p in eru.list_pods()]
 
 
 @bp.route('/api/pods/<pod_name>/list_hosts')
-@demand_login
 @json_api
 def list_hosts_in_pod(pod_name):
     return eru.list_pod_hosts(pod_name, g.start, g.limit)
 
 
-def _push_to_today_task(act, args):
-    task_key = date.today().strftime('task:%Y-%m-%d')
-    rds.lpush(task_key, json.dumps({
-        'time': datetime.now().strftime('%H:%M:%S'),
-        'user': g.user.uid,
-        'act': act,
-        'args': args,
-    }))
-    rds.expire(task_key, SIX_MONTHS)
-
-
-@bp.route('/api/projects/build_image', methods=['POST'])
-@demand_login
+@bp.route('/api/project/build_image', methods=['POST'])
 @json_api
-def project_build_image():
-    args = post_form()
-    logging.info('To build image project=%s revision=%s pod=%s image=%s',
-                 args['project'], args['revision'], args['pod'], args['image'])
-    app = eru.get_app(args['project'])
-    revision = args['revision']
+def api_build_image():
+    name = request.form['project']
+    app = eru.get_app(name)
+
+    revision = request.form['revision']
     _register_app(app['git'], revision)
-    project = _get_project(app['git'])
-    pod = args['pod']
-    group = _get_user_group()
-    image = 'docker-registry.intra.hunantv.com/nbeimage/%s' % args['image']
-    logging.info('Start building group=%s pod=%s app=%s image=%s rev=%s',
-                 group, pod, app['name'], image, revision)
-    eru.build_image(group, pod, app['name'], image, revision)
-    _push_to_today_task('build_image', args)
+    _get_project(app['git'])
+
+    pod = request.form['pod']
+    image = 'docker-registry.intra.hunantv.com/nbeimage/%s' % request.form['image']
+    eru.build_image(g.user.group, pod, app['name'], image, revision)
+
+    log = OPLog.create(g.user.id, OPLOG_ACTION.build_image)
+    log.image = image
 
 
 @bp.route('/api/revision/list_entrypoints', methods=['GET'])
-@demand_login
 @json_api
 def revision_list_entrypoints():
     project = _get_project(eru.get_app(request.args['project'])['git'])
@@ -270,7 +237,6 @@ def _lastest_version_sha(what):
 
 
 @bp.route('/api/revision/list_entrypoints_for_latest_ver', methods=['GET'])
-@demand_login
 @json_api
 def revision_list_entrypoints_for_latest_ver():
     p = request.args['project']
@@ -279,32 +245,32 @@ def revision_list_entrypoints_for_latest_ver():
     return y['entrypoints'].keys()
 
 
-@bp.route('/api/projects/deploy_container', methods=['POST'])
-@demand_login
+@bp.route('/api/project/deploy_container', methods=['POST'])
 @json_api
-def project_deploy_container_api():
-    args = request.form
-    project = args['project']
+def deploy_container_api():
+    form = request.form
+    project = form['project']
     if project == APPNAME_ERU_LB:
         raise ValueError('Unable to deploy eru-lb, do it on load balance page')
+
     eru.deploy_private(
-        group_name=_get_user_group(),
-        pod_name=args['pod'],
+        group_name=g.user.group,
+        pod_name=form['pod'],
         app_name=project,
-        ncore=float(args['ncore']),
-        ncontainer=int(args['ncontainer']),
-        version=args['version'],
-        entrypoint=args['entrypoint'],
-        env=args['env'],
-        network_ids=args.getlist('network'),
-        host_name=args.get('host'),
-        args=args['extendargs'].split(' '),
+        ncore=form.get('ncore', type=float),
+        ncontainer=form.get('ncontainer', type=int),
+        version=form['version'],
+        entrypoint=form['entrypoint'],
+        env=form['env'],
+        network_ids=form.getlist('network'),
+        host_name=form.get('host'),
+        args=form['extendargs'].split(' '),
     )
-    _push_to_today_task('deploy', args)
+
+    OPLog.create(g.user.id, OPLOG_ACTION.create_container)
 
 
 @bp.route('/api/containers', methods=['GET'])
-@demand_login
 @json_api
 def get_containers():
     appname = request.args.get('app', '')
@@ -317,61 +283,68 @@ def get_containers():
     return eru.list_app_containers(appname, g.start, g.limit)
 
 
-@bp.route('/api/projects/save_env', methods=['POST'])
-@demand_login
+@bp.route('/api/project/save_env', methods=['POST'])
 @json_api
 def set_project_env():
-    args = post_form()
-    project = args['project']
-    env = args['env']
+    form = request.form
+    project = form['project']
+    env = form['env']
     content = {}
-    for line, i in enumerate(args['content'].split('\n')):
-        if len(i.strip()) == 0:
+
+    for line, i in enumerate(form['content'].split('\n')):
+        if not i.strip():
             continue
+
         kv = i.split('=', 1)
         if len(kv) == 1:
             raise ValueError('invalid env item %s at line %d' % (i, line + 1))
+
         content[kv[0].strip()] = kv[1].strip()
-    eru.set_app_env(project, env, **content)
-    _push_to_today_task('edit_env', args)
+
+    try:
+        eru.set_app_env(project, env, **content)
+    except Exception as e:
+        print e.message
+    log = OPLog.create(g.user.id, OPLOG_ACTION.set_project_env)
+    log.data = content
 
 
 @bp.route('/api/tasklog/<int:task_id>')
-@demand_login
 @json_api
 def get_task_log(task_id):
     return eru.get_task_log(task_id)
 
 
 @bp.route('/api/containers/stop', methods=['POST'])
-@demand_login
 @json_api
 def stop_container():
-    cid = post_form()['id']
+    cid = request.form['id']
     if eru.get_container(cid)['appname'] == APPNAME_ERU_LB:
         raise ValueError('Unable to stop eru-lb, do it on load balance page')
-    logging.info('Stop container %s', cid)
+
     eru.stop_container(cid)
-    _push_to_today_task('stop', cid)
+    log = OPLog.create(g.user.id, OPLOG_ACTION.stop_container)
+    log.container_id = cid
 
 
 @bp.route('/api/containers/start', methods=['POST'])
-@demand_login
 @json_api
 def start_container():
-    cid = post_form()['id']
-    logging.info('Start container %s', cid)
+    cid = request.form['id']
     eru.start_container(cid)
-    _push_to_today_task('start', cid)
+
+    log = OPLog.create(g.user.id, OPLOG_ACTION.start_container)
+    log.container_id = cid
 
 
 @bp.route('/api/containers/remove', methods=['POST'])
-@demand_login
 @json_api
 def rm_container():
-    cid = post_form()['id']
+    cid = request.form['id']
     if eru.get_container(cid)['appname'] == APPNAME_ERU_LB:
         raise ValueError('Unable to remove eru-lb, do it on load balance page')
-    logging.info('Remove container %s', cid)
+
     eru.remove_containers([cid])
-    _push_to_today_task('remove', cid)
+
+    log = OPLog.create(g.user.id, OPLOG_ACTION.delete_container)
+    log.container_id = cid

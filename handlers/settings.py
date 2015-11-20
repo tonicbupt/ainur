@@ -1,17 +1,19 @@
-from flask import render_template, Blueprint, request, g
+# coding: utf-8
 
-from utils import json_api, demand_login, forbid
-from models.base import db
-from models.base_image import BaseImage
+from flask import render_template, Blueprint, request, g, abort
+
+from libs.ext import rds
+from libs.utils import json_api
+from models.image import BaseImage
 from models.user import User
+from models.project import Project
 import models.user
-from .ext import rds
 
 bp = Blueprint('settings', __name__, url_prefix='/settings')
 
 
 @bp.route('/')
-def images():
+def index():
     return render_template('settings/base_images.html',
                            images=BaseImage.query.all())
 
@@ -31,26 +33,43 @@ def add_image():
 @bp.route('/api/del_image', methods=['POST'])
 @json_api
 def del_image():
-    BaseImage.delete(int(request.form['id']))
+    BaseImage.delete_by_id(int(request.form['id']))
     _reset_images_cache()
 
 
 @bp.route('/users/')
 def list_users():
-    return render_template('settings/list_users.html',
-                           users=User.list(g.start, g.limit, User.uid.asc()))
+    users = User.get_all(g.start, g.limit)
+    return render_template('/settings/list_users.html', users=users)
 
 
 @bp.route('/users/<uid>/')
 def user_detail(uid):
-    return render_template('settings/user_detail.html',
-                           who=User.query.filter_by(uid=uid).first_or_404())
+    user = User.get_by_uid(uid)
+    if not user:
+        abort(404)
+    return render_template('/settings/user_detail.html', user=user)
+
+
+@bp.route('/users/<uid>/projects', methods=['POST'])
+@json_api
+def grant_project(uid):
+    user = User.get_by_uid(uid)
+    if not user:
+        return {'reason': '用户不存在'}, 404
+
+    name = request.form.get('project', '')
+    p = Project.get_by_name(name)
+    if not p:
+        return {'reason': '项目不存在'}, 404
+
+    user.grant_project(name)
 
 
 @bp.route('/api/users/setting', methods=['POST'])
 @json_api
 def set_user():
-    u = User.query.filter_by(uid=request.form['uid']).one()
+    u = User.get_by_uid(request.form['uid'])
     if u is None:
         raise ValueError('no such user')
     u.group = request.form['group']
@@ -63,7 +82,6 @@ def set_user():
 
 
 @bp.before_request
-@demand_login
 def access_control():
     if not g.user.is_admin():
-        return forbid()
+        abort(403)

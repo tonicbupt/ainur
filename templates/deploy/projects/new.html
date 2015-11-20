@@ -1,38 +1,38 @@
-{% extends './deploy/base.html' %}
+{% extends "/deploy/base.html" %}
 
 {% block main_view %}
 <div class="panel panel-default content-margin-top">
-    <div class="panel-heading">
-        <ul class="breadcrumb">
-            <li><a href='/deploy/'>项目列表</a></li>
-            <li class="active">新建项目</li>
-        </ul>
-    </div>
-    <div class="panel-body">
-        <form class="form-horizontal form-submit" data-url='/deploy/api/projects/register' data-method='POST'>
-            <div class="form-group">
-                <label class="col-sm-1 control-label">仓库地址</label>
-                <div class="col-sm-10">
-                    <input type="text" name='repo_url' class="form-control" placeholder="请输入 SSH 协议地址, 如 git@git.hunantv.com:platform/eru.git">
-                </div>
-            </div>
-            <div class="form-group">
-                <div class="col-sm-offset-1 col-sm-10">
-                    <button type="button" class="btn btn-primary submitter" id="projectNewForm">新建</button>
-                </div>
-            </div>
-            <div class='error-reason'></div>
-            <div class='error-detail'></div>
-        </form>
-    </div>
+  <div class="panel-heading">
+    <ul class="breadcrumb">
+      <li><a href="{{ url_for('deploy.deploy') }}">项目列表</a></li>
+      <li class="active">新建项目</li>
+    </ul>
+  </div>
+  <div class="panel-body">
+    <form class="form-horizontal form-submit" data-url="{{ url_for('deploy.api_register') }}" data-method='POST'>
+      <div class="form-group">
+        <label class="col-sm-1 control-label">仓库地址</label>
+        <div class="col-sm-10">
+          <input type="text" name='repo_url' class="form-control" placeholder="请输入 SSH 协议地址, 如 git@git.hunantv.com:platform/eru.git">
+        </div>
+      </div>
+      <div class="form-group">
+        <div class="col-sm-offset-1 col-sm-10">
+          <button type="button" class="btn btn-primary submitter" id="projectNewForm">新建</button>
+        </div>
+      </div>
+      <div class='error-reason'></div>
+      <div class='error-detail'></div>
+    </form>
+  </div>
 </div>
 {% endblock %}
 
 {% block page_js %}
-<script src='/static/js/deploy/submit.js'></script>
+<script src="/static/js/deploy/submit.js"></script>
 <script>
-$('#projectNewForm')[0].success = function(r) {
-    window.location = '/deploy/projects/detail/' + r;
-}
+  $('#projectNewForm')[0].success = function(r) {
+    window.location = '/deploy/project/' + r + '/detail/';
+  }
 </script>
 {% endblock %}

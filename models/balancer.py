@@ -4,7 +4,7 @@ import json
 import requests
 
 from base import db, Base
-from clients import eru
+from libs.clients import eru
 
 
 class BalanceRecord(Base):
@@ -18,13 +18,11 @@ class BalanceRecord(Base):
 
     @classmethod
     def create(cls, appname, entrypoint, domain, balancer_id):
-        r = cls()
-        r.appname = appname
-        r.entrypoint = entrypoint
-        r.domain = domain
-        r.balancer_id = balancer_id
+        r = cls(appname=appname, entrypoint=entrypoint, domain=domain, balancer_id=balancer_id)
         db.session.add(r)
         db.session.commit()
+
+        add_record_rules(r)
         return r
 
     @classmethod
@@ -40,6 +38,10 @@ class BalanceRecord(Base):
     def backend_name(self):
         return '%s_%s' % (self.appname, self.entrypoint)
 
+    @property
+    def balancer(self):
+        return Balancer.get(self.balancer_id)
+
     def get_backends(self):
         backends = []
         containers = eru.list_app_containers(self.appname, limit=100)
@@ -48,6 +50,11 @@ class BalanceRecord(Base):
                 continue
             backends.extend(container['backends'])
         return backends
+
+    def delete(self):
+        delete_record_rules(self)
+        db.session.delete(self)
+        db.session.commit()
 
 
 class Balancer(Base):
@@ -71,10 +78,6 @@ class Balancer(Base):
         db.session.add(b)
         db.session.commit()
         return b
-
-    @classmethod
-    def get(cls, id):
-        return cls.query.filter_by(id=id).first()
 
     @classmethod
     def get_by_group(cls, group):
@@ -104,37 +107,67 @@ class Balancer(Base):
         db.session.commit()
 
 
-def update_record(balancer, record):
-    if not record:
-        return
+class LBClient(object):
 
-    headers = {'Host': balancer.addr}
+    def __init__(self, addr):
+        if not addr.startswith('http://'):
+            addr = 'http://%s' % addr
+        self.addr = addr
+
+    def _get(self, url):
+        resp = requests.get(url)
+        return resp.status_code == 200 and resp.json() or None
+
+    def _put(self, url, data):
+        resp = requests.put(url, data=json.dumps(data))
+        return resp.status_code == 200
+
+    def _delete(self, url, data):
+        resp = requests.delete(url, data=json.dumps(data))
+        return resp.status_code == 200
+
+    def get_domain(self):
+        return self._get('%s/__erulb__/domain' % self.addr)
+
+    def update_domain(self, backend_name, domain):
+        data = {'backend': backend_name, 'name': domain}
+        return self._put('%s/__erulb__/domain' % self.addr, data)
+
+    def delete_domain(self, backend_name):
+        data = {'backend': backend_name}
+        return self._delete('%s/__erulb__/domain' % self.addr, data)
+
+    def get_upstream(self):
+        return self._get('%s/__erulb__/upstream' % self.addr)
+
+    def update_upstream(self, backend_name, servers):
+        data = {'backend': backend_name, 'servers': servers}
+        return self._put('%s/__erulb__/upstream' % self.addr, data)
+
+    def delete_upstream(self, backend_name):
+        data = {'backend': backend_name}
+        return self._delete('%s/__erulb__/upstream' % self.addr, data)
+
+
+def add_record_rules(record):
+    balancer = record.balancer
+    client = LBClient(balancer.addr)
 
     # 1. 添加upstream
-    upstream_url = balancer.addr + '/__erulb__/upstream'
-    if not upstream_url.startswith('http://'):
-        upstream_url = 'http://' + upstream_url
     # 现在还没加 weight
-    backends = record.get_backends()
-    payload = {
-        'backend': record.backend_name,
-        'servers': ['server %s;' % b for b in backends],
-    }
-    r = requests.put(upstream_url, headers=headers, data=json.dumps(payload))
-    if r.status_code != 200:
-        return False
-    if r.json()['msg'] != 'ok':
-        return False
+    servers = ['server %s;' % b for b in record.get_backends()]
+    client.update_upstream(record.backend_name, servers)
 
     # 2. 添加domain
-    domain_url = balancer.addr + '/__erulb__/domain'
-    if not domain_url.startswith('http://'):
-        domain_url = 'http://' + domain_url
-    payload = {
-        'backend': record.backend_name,
-        'name': record.domain,
-    }
-    r = requests.put(domain_url, headers=headers, data=json.dumps(payload))
-    if r.status_code != 200:
-        return False
-    return r.json()['msg'] == 'ok'
+    client.update_domain(record.backend_name, record.domain)
+
+
+def delete_record_rules(record):
+    balancer = record.balancer
+    client = LBClient(balancer.addr)
+
+    # 1. 删除domain
+    client.delete_domain(record.backend_name)
+
+    # 2. 删除upstream
+    client.delete_upstream(record.backend_name)

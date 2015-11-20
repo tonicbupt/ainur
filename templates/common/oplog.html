@@ -1,0 +1,36 @@
+{% macro show(logs) %}
+<div class="panel panel-default content-margin-top">
+  <div class="row clearfix">
+    <div class="panel-heading text-left" style="float:left;">
+      <span class="glyphicon glyphicon-calendar" aria-hidden="true"></span> {{ request.args.get('date', '所有日志') }}
+    </div>
+    <div class="search_bar">
+      <input id='datepicker' type="text" class="form-control" placeholder='选择日期'>
+    </div>
+  </div>
+
+  <table class="table table-bordered table-striped">
+    <tr>
+      <th>时间</th>
+      <th>用户</th>
+      <th>操作</th>
+    </tr>
+    {% for log in logs %}
+    <tr>
+      <td>{{ log.time }}</td>
+      <td>{{ log.user.uid }}</td>
+      <td>{{ log.data }}</td>
+    </tr>
+    {% endfor %}
+  </table>
+</div>
+
+<script src='/static/js/jquery-ui.min.js'></script>
+<script>
+  $('#datepicker').datepicker({
+    dateFormat: "yy-mm-dd"
+  }).change(function() {
+    window.location = '?date=' + $(this).val();
+  });
+</script>
+{% endmacro %}
