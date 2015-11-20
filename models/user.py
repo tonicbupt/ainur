@@ -17,8 +17,23 @@ class User(Base):
     priv_flags = db.Column(db.Integer, nullable=False, default=PRIV_USER)
 
     @classmethod
+    def get_or_create(cls, uid, realname):
+        u = cls.get_by_uid(uid)
+        if u:
+            return u
+        u = cls(uid=uid, realname=realname)
+        db.session.add(u)
+        db.session.commit()
+        return u
+
+    @classmethod
     def get_by_uid(cls, uid):
         return cls.query.filter_by(uid=uid).first()
+
+    @classmethod
+    def get_all(cls, start=0, limit=20):
+        q = cls.query.order_by(cls.uid.desc())
+        return q[start:start+limit]
 
     def get_accessible_projects(self, start=0, limit=20):
         from .project import ProjectUserMapping, Project

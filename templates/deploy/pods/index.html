@@ -1,28 +1,30 @@
-{% extends './deploy/base.html' %}
+{% extends "/deploy/base.html" %}
 
 {% block main_view %}
 <div class="panel panel-default content-margin-top">
-    <table class="table table-bordered table-striped">
-        <tr>
-            <th>ID</th>
-            <th>名字</th>
-            <th>描述</th>
-            <th>机器数量</th>
-            <th>查看</th>
-        </tr>
-        {% for pod in pods %}
-        <tr>
-            <td>{{ pod.id }}</td>
-            <td>{{ pod.name }}</td>
-            <td>{{ pod.description }}</td>
-            <td>{{ pod.host_count }}</td>
-            <td>
-                <a href='/deploy/pods/{{ pod.name|e }}/hosts/' class="btn btn-default btn-xs"><span class="glyphicon glyphicon-th" aria-hidden="true"></span> 查看机器</a>
-            </td>
-        </tr>
-        {% endfor %}
-    </table>
+  <table class="table table-bordered table-striped">
+    <tr>
+      <th>ID</th>
+      <th>名字</th>
+      <th>描述</th>
+      <th>机器数量</th>
+      <th>查看</th>
+    </tr>
+    {% for pod in pods %}
+    <tr>
+      <td>{{ pod.id }}</td>
+      <td>{{ pod.name }}</td>
+      <td>{{ pod.description }}</td>
+      <td>{{ pod.host_count }}</td>
+      <td>
+        <a href="{{ url_for('deploy.pod_hosts', pod_name=pod.name) }}" class="btn btn-default btn-xs">
+          <span class="glyphicon glyphicon-th" aria-hidden="true"></span> 查看机器
+        </a>
+      </td>
+    </tr>
+    {% endfor %}
+  </table>
 
-    {% include 'common/pagination.html' %}
+  {% include "common/pagination.html" %}
 </div>
 {% endblock %}

@@ -1,146 +1,146 @@
-{% extends './deploy/base.html' %}
+{% extends "/deploy/base.html" %}
 
 {% block main_view %}
 <div class="panel panel-default content-margin-top">
-    <div class="panel-heading">
-        <ul class="breadcrumb">
-            <li><a href='/deploy/'>项目列表</a></li>
-            <li><a href='/deploy/projects/detail/{{ project_name|e }}'>{{ project_name|e }}</a></li>
-            <li><a href='/deploy/projects/containers/{{ project_name|e }}'>容器</a></li>
-            <li class="active">上线容器</li>
-        </ul>
-    </div>
-    <div class="panel-body">
-        <form class="form-horizontal form-submit" data-url='/deploy/api/projects/deploy_container' data-method='POST'>
-            <div class="form-group">
-                <label for="input-ip" class="col-sm-1 control-label">项目名称</label>
-                <div class="col-sm-10">
-                    <input type="text" name='project' class="form-control" readonly="readonly" value='{{ project_name|e }}'>
-                </div>
-            </div>
+  <div class="panel-heading">
+    <ul class="breadcrumb">
+      <li><a href="{{ url_for('deploy.deploy') }}">项目列表</a></li>
+      <li><a href="{{ url_for('deploy.detail', name=name) }}">{{ name }}</a></li>
+      <li><a href="{{ url_for('deploy.containers', name=name) }}">容器</a></li>
+      <li class="active">上线容器</li>
+    </ul>
+  </div>
+  <div class="panel-body">
+    <form class="form-horizontal form-submit" data-url="{{ url_for('deploy.deploy_container_api') }}" data-method="POST">
+      <div class="form-group">
+        <label for="input-ip" class="col-sm-1 control-label">项目名称</label>
+        <div class="col-sm-10">
+          <input type="text" name='project' class="form-control" readonly="readonly" value="{{ name }}">
+        </div>
+      </div>
 
-            <div class="form-group">
-                <label for="input-ip" class="col-sm-1 control-label">镜像版本</label>
-                <div class="col-sm-10">
-                    <select name='version' id='select-version'>
-                    {% for i in images %}
-                        <option value='{{ i[-7:] }}'>{{ i[-7:] }}</option>
-                    {% endfor %}
-                    </select>
-                    <a href='/deploy/projects/build_image/{{ project_name|e }}' target='_blank'>去构建镜像</a>
-                </div>
-            </div>
+      <div class="form-group">
+        <label for="input-ip" class="col-sm-1 control-label">镜像版本</label>
+        <div class="col-sm-10">
+          <select name="version" id="select-version">
+            {% for i in images %}
+            <option value='{{ i[-7:] }}'>{{ i[-7:] }}</option>
+            {% endfor %}
+          </select>
+          <a href="{{ url_for('deploy.build_image', name=name) }}" target='_blank'>去构建镜像</a>
+        </div>
+      </div>
 
-            <div class="form-group">
-                <label for="input-ip" class="col-sm-1 control-label">程序入口</label>
-                <div class="col-sm-10">
-                    <select name='entrypoint' id='entrypoints'></select>
-                </div>
-            </div>
+      <div class="form-group">
+        <label for="input-ip" class="col-sm-1 control-label">程序入口</label>
+        <div class="col-sm-10">
+          <select name='entrypoint' id='entrypoints'></select>
+        </div>
+      </div>
 
-            <div class="form-group">
-                <label for="input-ip" class="col-sm-1 control-label">机器组</label>
-                <div class="col-sm-10">
-                    <select name='pod' id='pod-select'>
-                    {% for p in pods %}
-                        <option value='{{ p.name }}'>{{ p.name }}</option>
-                    {% endfor %}
-                    </select>
-                </div>
-            </div>
+      <div class="form-group">
+        <label for="input-ip" class="col-sm-1 control-label">机器组</label>
+        <div class="col-sm-10">
+          <select name='pod' id='pod-select'>
+            {% for p in pods %}
+            <option value='{{ p.name }}'>{{ p.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
 
-            <div class="form-group">
-                <label for="input-ip" class="col-sm-1 control-label">指定宿主机</label>
-                <div class="col-sm-10">
-                    <select name='host' id='host-select'></select>
-                </div>
-            </div>
+      <div class="form-group">
+        <label for="input-ip" class="col-sm-1 control-label">指定宿主机</label>
+        <div class="col-sm-10">
+          <select name='host' id='host-select'></select>
+        </div>
+      </div>
 
-            <div class="form-group">
-                <label for="input-ip" class="col-sm-1 control-label">环境</label>
-                <div class="col-sm-10">
-                    <select name='env'>
-                    {% for e in envs %}
-                        <option value='{{ e|e }}'>{{ e|e }}</option>
-                    {% endfor %}
-                    </select>
-                    <a href='/deploy/projects/envs/{{ project_name|e }}' target='_blank'>去配置环境</a>
-                </div>
-            </div>
+      <div class="form-group">
+        <label for="input-ip" class="col-sm-1 control-label">环境</label>
+        <div class="col-sm-10">
+          <select name='env'>
+            {% for e in envs %}
+            <option value='{{ e }}'>{{ e }}</option>
+            {% endfor %}
+          </select>
+          <a href="{{ url_for('deploy.environments', name=name) }}" target="_blank">去配置环境</a>
+        </div>
+      </div>
 
-            <div class="form-group">
-                <label for="input-ip" class="col-sm-1 control-label">虚拟网卡绑定</label>
-                <div class="col-sm-10">
-                {% for nw in networks %}
-                    <div class="checkbox">
-                        <label><input name='network' type="checkbox" value="{{ nw.id }}">{{ nw.name|e }} - {{ nw.netspace }}</label>
-                    </div>
-                {% endfor %}
-                </div>
-            </div>
+      <div class="form-group">
+        <label for="input-ip" class="col-sm-1 control-label">虚拟网卡绑定</label>
+        <div class="col-sm-10">
+          {% for nw in networks %}
+          <div class="checkbox">
+            <label><input name='network' type="checkbox" value="{{ nw.id }}">{{ nw.name }} - {{ nw.netspace }}</label>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
 
-            <div class="form-group">
-                <label for="input-ip" class="col-sm-1 control-label">容器个数</label>
-                <div class="col-sm-10">
-                    <input type="text" name='ncontainer' class="form-control" value='1'>
-                </div>
-            </div>
+      <div class="form-group">
+        <label for="input-ip" class="col-sm-1 control-label">容器个数</label>
+        <div class="col-sm-10">
+          <input type="text" name='ncontainer' class="form-control" value='1'>
+        </div>
+      </div>
 
-            <div class="form-group">
-                <label for="input-ip" class="col-sm-1 control-label">独占 CPU 个数</label>
-                <div class="col-sm-10">
-                    <input type="text" name='ncore' class="form-control" value='1'>
-                </div>
-            </div>
+      <div class="form-group">
+        <label for="input-ip" class="col-sm-1 control-label">独占 CPU 个数</label>
+        <div class="col-sm-10">
+          <input type="text" name='ncore' class="form-control" value='1'>
+        </div>
+      </div>
 
-            <div class="form-group">
-                <label for="input-ip" class="col-sm-1 control-label">命令行参数</label>
-                <div class="col-sm-10">
-                    <input type="text" name="extendargs" class="form-control" placeholder="多个参数用空格隔开，没有则不需填写">
-                </div>
-            </div>
+      <div class="form-group">
+        <label for="input-ip" class="col-sm-1 control-label">命令行参数</label>
+        <div class="col-sm-10">
+          <input type="text" name="extendargs" class="form-control" placeholder="多个参数用空格隔开，没有则不需填写">
+        </div>
+      </div>
 
-            <div class="form-group">
-                <div class="col-sm-offset-1 col-sm-11">
-                    <button type="button" class="btn btn-primary submitter" id='deployContainer'>上线</button>
-                </div>
-            </div>
+      <div class="form-group">
+        <div class="col-sm-offset-1 col-sm-11">
+          <button type="button" class="btn btn-primary submitter" id='deployContainer'>上线</button>
+        </div>
+      </div>
 
-            <div class="col-sm-offset-1 col-sm-11">
-                <div class='error-reason'></div>
-                <div class='error-detail'></div>
-            </div>
-        </form>
-    </div>
+      <div class="col-sm-offset-1 col-sm-11">
+        <div class='error-reason'></div>
+        <div class='error-detail'></div>
+      </div>
+    </form>
+  </div>
 </div>
 {% endblock %}
 
 {% block page_js %}
 <script src='/static/js/deploy/submit.js'></script>
 <script>
-$('#deployContainer')[0].success = function() {
-    window.location = '/deploy/projects/containers/{{ project_name|e }}';
-}
+  $('#deployContainer')[0].success = function() {
+    window.location = '/deploy/project/{{ name }}/containers/';
+  }
 
 $('#select-version').change(function() {
-    $.get('/deploy/api/revision/list_entrypoints', {
-        project: '{{ project_name|e }}',
-        commit: $(this).val()
-    }, function(r) {
-        var ep = $('#entrypoints').html('');
-        for (var i = 0; i < r.length; ++i) {
-            ep.append($('<option>').val(r[i]).text(r[i]));
-        }
-    });
+  $.get('/deploy/api/revision/list_entrypoints', {
+    project: '{{ project_name|e }}',
+    commit: $(this).val()
+  }, function(r) {
+    var ep = $('#entrypoints').html('');
+    for (var i = 0; i < r.length; ++i) {
+      ep.append($('<option>').val(r[i]).text(r[i]));
+    }
+  });
 }).change();
 
 function podSelected() {
-    $.get('/deploy/api/pods/' + $('#pod-select').val() + '/list_hosts', {}, function(r) {
-        $('#host-select').html('').append($('<option>').val('').text('随机'));
-        for (var i = 0; i < r.length; ++i) {
-            $('#host-select').append($('<option>').val(r[i].name).text(r[i].addr + ' - ' + r[i].name));
-        }
-    });
+  $.get('/deploy/api/pods/' + $('#pod-select').val() + '/list_hosts', {}, function(r) {
+    $('#host-select').html('').append($('<option>').val('').text('随机'));
+    for (var i = 0; i < r.length; ++i) {
+      $('#host-select').append($('<option>').val(r[i].name).text(r[i].addr + ' - ' + r[i].name));
+    }
+  });
 }
 
 podSelected();

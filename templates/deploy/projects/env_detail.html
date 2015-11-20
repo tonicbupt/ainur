@@ -1,63 +1,63 @@
-{% extends './deploy/base.html' %}
+{% extends "/deploy/base.html" %}
 
 {% block main_view %}
 <div class="panel panel-default content-margin-top">
-    <div class="panel-heading panel-heading02">
-        <ul class="breadcrumb">
-            <li><a href='/deploy/'>项目列表</a></li>
-            <li><a href='/deploy/projects/detail/{{ project_name|e }}'>{{ project_name|e }}</a></li>
-            <li><a href='/deploy/projects/envs/{{ project_name|e }}'>环境</a></li>
-            <li class="active">{{ env_name|e }}</a></li></li>
-        </ul>
-    </div>
+  <div class="panel-heading panel-heading02">
+    <ul class="breadcrumb">
+      <li><a href="{{ url_for('deploy.deploy') }}">项目列表</a></li>
+      <li><a href="{{ url_for('deploy.detail', name=name) }}">{{ name }}</a></li>
+      <li><a href="{{ url_for('deploy.environments', name=name) }}">环境</a></li>
+      <li class="active">{{ env_name }}</li>
+    </ul>
+  </div>
 
-    <form class="form-horizontal form-submit" data-url='/deploy/api/projects/save_env' data-method='POST'>
-        <table class="table table-bordered table-ver">
-            <tr>
-                <th class="col-xs-2 text-right">项目名称:</th>
-                <td>
-                    <input type="text" name='project' class="form-control" readonly="readonly" value='{{ project_name|e }}'>
-                </td>
-            </tr>
+  <form class="form-horizontal form-submit" data-url="{{ url_for('deploy.set_project_env') }}" data-method='POST'>
+    <table class="table table-bordered table-ver">
+      <tr>
+        <th class="col-xs-2 text-right">项目名称:</th>
+        <td>
+          <input type="text" name='project' class="form-control" readonly="readonly" value='{{ name }}'>
+        </td>
+      </tr>
 
-            <tr>
-                <th class="col-xs-2 text-right">环境名称:</th>
-                <td>
-                    <input type="text" name='env' class="form-control" readonly="readonly" value='{{ env_name|e }}'>
-                </td>
-            </tr>
+      <tr>
+        <th class="col-xs-2 text-right">环境名称:</th>
+        <td>
+          <input type="text" name='env' class="form-control" readonly="readonly" value='{{ env_name }}'>
+        </td>
+      </tr>
 
-            <tr>
-                <th class="col-xs-2 text-right" style='vertical-align: top'>环境变量:</th>
-                <td>
-                    <p>每个环境变量一行, 等号隔开名字和取值 (名字中不可包含等号)</p>
-                    <textarea name='content' id='env_content' class="form-control" style='height: 480px'>
-                    {%- for key, val in env_content.iteritems() %}
-                        {{- key|e }}={{- val|e }}{{ '\n' }}
-                    {%- endfor %}
-                    </textarea>
-                </td>
-            </tr>
+      <tr>
+        <th class="col-xs-2 text-right" style='vertical-align: top'>环境变量:</th>
+        <td>
+          <p>每个环境变量一行, 等号隔开名字和取值 (名字中不可包含等号)</p>
+          <textarea name='content' id='env_content' class="form-control" style='height: 480px'>
+            {%- for key, val in env_content.iteritems() %}
+            {{- key }}={{- val }}{{ '\n' }}
+            {%- endfor %}
+          </textarea>
+        </td>
+      </tr>
 
-            <tr>
-                <th class="col-xs-2 text-right"></th>
-                <td>
-                    <button type="button" class="btn btn-primary submitter" id='saveEnv'>保存</button>
-                    <div class='error-reason'></div>
-                    <div class='error-detail'></div>
-                </td>
-            </tr>
-        </table>
-    </form>
+      <tr>
+        <th class="col-xs-2 text-right"></th>
+        <td>
+          <button type="button" class="btn btn-primary submitter" id='saveEnv'>保存</button>
+          <div class='error-reason'></div>
+          <div class='error-detail'></div>
+        </td>
+      </tr>
+    </table>
+  </form>
 </div>
 {% endblock %}
 
 {% block page_js %}
-<script src='/static/js/deploy/submit.js'></script>
+<script src="/static/js/deploy/submit.js"></script>
 <script>
-$('#saveEnv')[0].success = function() {
-    window.location = '/deploy/projects/envs/{{ project_name|e }}';
-}
+  $('#saveEnv')[0].success = function() {
+    window.location = '/deploy/project/{{ name }}/envs/';
+  }
 
 $('#env_content').val($('#env_content').val().trim());
 </script>

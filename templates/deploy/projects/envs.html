@@ -1,44 +1,44 @@
-{% extends './deploy/base.html' %}
+{% extends "/deploy/base.html" %}
 
 {% block main_view %}
 <div class="panel panel-default content-margin-top">
-    <div class="panel-heading panel-heading02">
-        <ul class="breadcrumb">
-            <li><a href='/deploy/'>项目列表</a></li>
-            <li><a href='/deploy/projects/detail/{{ project_name|e }}'>{{ project_name|e }}</a></li>
-            <li class="active">环境列表</a></li></li>
-        </ul>
+  <div class="panel-heading panel-heading02">
+    <ul class="breadcrumb">
+      <li><a href="{{ url_for('deploy.deploy') }}">项目列表</a></li>
+      <li><a href="{{ url_for('deploy.detail', name=name) }}">{{ name }}</a></li>
+      <li class="active">环境列表</a></li></li>
+</ul>
     </div>
     <table class="table table-bordered table-striped">
-        <tr>
-            <th class="col-xs-2">
-                <span>名称</span>
-                <span style='float: right'>
-                    新建环境
-                    <input type='text' id='new_env' style='width: 140px' placeholder='环境名称'>
-                    <button class='btn' id='new_env_btn'>新建</button>
-                </span>
-            </th>
-        </tr>
+      <tr>
+        <th class="col-xs-2">
+          <span>名称</span>
+          <span style='float: right'>
+            新建环境
+            <input type='text' id='new_env' style='width: 140px' placeholder='环境名称'>
+            <button class='btn' id='new_env_btn'>新建</button>
+          </span>
+        </th>
+      </tr>
 
-        <tbody id='envs'>
+      <tbody id='envs'>
         {% for e in envs %}
-            <tr>
-                <td><a href='/deploy/projects/envs/{{ project_name|e }}/{{ e|e }}'>{{ e|e }}</a></td>
-            </tr>
+        <tr>
+          <td><a href="{{ url_for('deploy.env_detail', name=name, env_name=e) }}">{{ e }}</a></td>
+        </tr>
         {% endfor %}
-        </tbody>
+      </tbody>
     </table>
-</div>
-{% endblock %}
+  </div>
+  {% endblock %}
 
-{% block page_js %}
-<script>
-$('#new_env_btn').click(function() {
-    var env = $('#new_env').val().trim();
-    if (env.length === 0) return;
-    $('#envs').append($('<tr>').append($('<td>').append(
-            $('<a>').attr('href', '/deploy/projects/envs/{{ project_name|e }}/' + env).text(env))));
-});
-</script>
-{% endblock %}
+  {% block page_js %}
+  <script>
+    $('#new_env_btn').click(function() {
+      var env = $('#new_env').val().trim();
+      if (env.length === 0) return;
+      $('#envs').append($('<tr>').append($('<td>').append(
+              $('<a>').attr('href', '/deploy/project/{{ name }}/envs/' + env + '/').text(env))));
+    });
+  </script>
+  {% endblock %}

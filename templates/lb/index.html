@@ -1,87 +1,62 @@
-{% extends './lb/base.html' %}
+{% extends "/lb/base.html" %}
 
 {% block main_view %}
 <div class="panel panel-default content-margin-top">
-    <div class="row clearfix">
-        <div class="panel-heading text-left" style="float:left;">
-            <a class="btn btn-default btn-dark" href='/lb/create'><span class="glyphicon glyphicon-plus" aria-hidden="true"></span> 新建容器</a>
-        </div>
-        <div class="search_bar">
-            <input type="text" id='projectName' class="form-control" placeholder="输入项目名字跳转">
-            <button id="toProject" class="glyphicon glyphicon-arrow-right"></span></button>
-        </div>
+  <div class="row clearfix">
+    <div class="panel-heading text-left" style="float:left;">
+      <a class="btn btn-default btn-dark" href="{{ url_for('lb.create') }}">
+        <span class="glyphicon glyphicon-plus" aria-hidden="true"></span> 新建LB
+      </a>
     </div>
-    <table class="table table-bordered table-striped">
-        <tr>
-            <th>#</th>
-            <th>容器 ID</th>
-            <th>路由</th>
-            <th>操作</th>
-        </tr>
-        {% for b in balancers %}
-        <tr>
-            <td>{{ b.id }}</td>
-            <td>{{ b.container_id[:11] }}</td>
-            <td>
-              {% for r in b.get_records() %}
-                <p>{{r.domain}} --> {{r.appname}}:{{r.entrypoint}}</p>
-              {% endfor %}
-            </td>
-            <td>
-                <a href='/lb/{{ b.id }}/records' class="btn btn-default btn-xs">
-                    <i class="fa fa-cube"></i> 查看容器
-                </a>
+  </div>
+</div>
+<table class="table table-bordered table-striped">
+  <tr>
+    <th>#</th>
+    <th>容器 ID</th>
+    <th>路由</th>
+    <th>操作</th>
+  </tr>
+  {% for b in balancers %}
+  <tr>
+    <td>{{ b.id }}</td>
+    <td>{{ b.container_id[:11] }}</td>
+    <td>
+      {% for r in b.get_records() %}
+      <p>{{ r.domain }} --> {{ r.appname }}:{{ r.entrypoint }}</p>
+      {% endfor %}
+    </td>
+    <td>
+      <a href="{{ url_for('lb.records', balancer_id=b.id) }}" class="btn btn-default btn-xs">
+        <i class="fa fa-cube"></i> 查看记录
+      </a>
 
-                {% if b.appname %}
-                <a href='/lb/project/{{ b.appname }}/' class="btn btn-default btn-xs">
-                    <span class="glyphicon glyphicon-th" aria-hidden="true"></span> 查看应用
-                </a>
-                {% endif %}
-
-                <button class="btn btn-danger btn-toggle-next btn-xs btn-delete" data-id="{{b.id}}">
-                    <i class="fa fa-trash"></i> 下线
-                </button>
-            </td>
-        </tr>
-        {% endfor %}
-    </table>
-    {% include 'common/pagination.html' %}
+      <button class="btn btn-danger btn-toggle-next btn-xs btn-delete" data-id="{{ b.id }}">
+        <i class="fa fa-trash"></i> 下线
+      </button>
+    </td>
+  </tr>
+  {% endfor %}
+</table>
+{% include "/common/pagination.html" %}
 </div>
 {% endblock %}
 
 {% block page_js %}
 <script src='/static/js/common.js'></script>
 <script>
-function goProj() {
-    var proj = $('#projectName').val().trim();
-    if (proj.length === 0) {
-        return;
-    }
-    window.location = '/lb/project/' + proj;
-}
-
-$('#toProject').click(function() {
-    goProj();
-});
-
-$('#projectName').keyup(function(event) {
-    if (event.keyCode == 13) {
-        goProj();
-    }
-});
-
-$('.btn-delete').click(function() {
+  $('.btn-delete').click(function() {
     if (!confirm('确定要删除?')) {
-        return;
+      return;
     }
     var btn = $(this);
     $.ajax({
-        url: '/lb/api/' + btn.data('id'),
-        type: 'DELETE',
-        success: function() {
-            btn.parent().parent().remove();
-        }
+      url: '/lb/api/' + btn.data('id'),
+      type: 'DELETE',
+      success: function() {
+        btn.parent().parent().remove();
+      }
     });
-});
+  });
 </script>
 {% endblock %}

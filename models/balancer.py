@@ -4,7 +4,7 @@ import json
 import requests
 
 from base import db, Base
-from clients import eru
+from libs.clients import eru
 
 
 class BalanceRecord(Base):

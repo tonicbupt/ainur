@@ -1,58 +1,68 @@
-{% extends './deploy/base.html' %}
+{% extends "./deploy/base.html" %}
 
 {% block main_view %}
+
 <div class="panel panel-default content-margin-top">
-    <div class="row clearfix">
-        <div class="panel-heading text-left" style="float:left;">
-            <a class="btn btn-default btn-dark" href='/deploy/projects/new'><span class="glyphicon glyphicon-plus" aria-hidden="true"></span> 新建项目</a>
-        </div>
-        <div class="search_bar">
-            <input type="text" id='projectName' class="form-control" placeholder="输入项目名字跳转">
-            <button id="toProject" class="glyphicon glyphicon-arrow-right"></span></button>
-        </div>
+  <div class="row clearfix">
+    <div class="panel-heading text-left" style="float:left;">
+      <a class="btn btn-default btn-dark" href="{{ url_for('deploy.new') }}">
+        <span class="glyphicon glyphicon-plus" aria-hidden="true"></span> 新建项目
+      </a>
     </div>
-    <table class="table table-bordered table-striped">
-        <tr>
-            <th>项目ID</th>
-            <th>名称</th>
-            <th>Git 地址</th>
-            <th>操作</th>
-        </tr>
-        {% for project in projects %}
-        <tr>
-            <td>{{ project.id }}</td>
-            <td>{{ project.name }}</td>
-            <td>{{ project.git }}</td>
-            <td>
-                <a href='/deploy/projects/detail/{{ project.name|e }}' class="btn btn-default btn-xs"><span class="glyphicon glyphicon-th" aria-hidden="true"></span> 查看</a>
-                <a href='/deploy/projects/build_image/{{ project.name|e }}' class="btn btn-default btn-xs"><span class="glyphicon glyphicon-plus" aria-hidden="true"></span> 构建镜像</a>
-                <a href='/deploy/projects/images/{{ project.name|e }}' class="btn btn-default btn-xs"><span class="glyphicon glyphicon-list" aria-hidden="true"></span> 任务列表</a>
-            </td>
-        </tr>
-        {% endfor %}
-    </table>
-    {% include 'common/pagination.html' %}
+    <div class="search_bar">
+      <input type="text" id='projectName' class="form-control" placeholder="输入项目名字跳转">
+      <button id="toProject" class="glyphicon glyphicon-arrow-right"></span></button>
+  </div>
+</div>
+
+<table class="table table-bordered table-striped">
+  <tr>
+    <th>名称</th>
+    <th>Git 地址</th>
+    <th>操作</th>
+  </tr>
+  {% for project in projects %}
+  <tr>
+    <td>{{ project.name }}</td>
+    <td>{{ project.git }}</td>
+    <td>
+      <a href="{{ url_for('deploy.detail', name=project.name) }}" class="btn btn-default btn-xs">
+        <span class="glyphicon glyphicon-th" aria-hidden="true"></span> 查看
+      </a>
+      <a href="{{ url_for('deploy.build_image', name=project.name) }}" class="btn btn-default btn-xs">
+        <span class="glyphicon glyphicon-plus" aria-hidden="true"></span> 构建镜像
+      </a>
+      <a href="{{ url_for('deploy.tasks', name=project.name) }}" class="btn btn-default btn-xs">
+        <span class="glyphicon glyphicon-list" aria-hidden="true"></span> 任务列表
+      </a>
+    </td>
+  </tr>
+  {% endfor %}
+</table>
+
+{% include "common/pagination.html" %}
+
 </div>
 {% endblock %}
 
 {% block page_js %}
 <script>
-function goProj() {
+  function goProj() {
     var proj = $('#projectName').val().trim();
     if (proj.length === 0) {
-        return;
+      return;
     }
-    window.location = '/deploy/projects/detail/' + proj;
-}
+    window.location = '/deploy/project/' + proj + '/detail/';
+  }
 
 $('#toProject').click(function() {
-    goProj();
+  goProj();
 });
 
 $('#projectName').keyup(function(event) {
-    if (event.keyCode == 13) {
-        goProj();
-    }
+  if (event.keyCode == 13) {
+    goProj();
+  }
 });
 </script>
 {% endblock %}

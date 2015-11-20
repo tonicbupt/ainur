@@ -1,39 +1,41 @@
-{% extends './deploy/base.html' %}
+{% extends "/deploy/base.html" %}
 
 {% block main_view %}
 <div class="panel panel-default content-margin-top">
-    <div class="panel-heading panel-heading02">
-        <ul class="breadcrumb">
-            <li><a href='/deploy/pods/'>机器组</a></li>
-            <li class="active">{{ pod_name|e }}</a></li></li>
-        </ul>
-    </div>
+  <div class="panel-heading panel-heading02">
+    <ul class="breadcrumb">
+      <li><a href="{{ url_for('deploy.pods_list') }}">机器组</a></li>
+      <li class="active">{{ pod_name }}</li>
+    </ul>
+  </div>
 
-    <table class="table table-bordered table-striped">
-        <tr>
-            <th>ID</th>
-            <th>名字</th>
-            <th>主机地址</th>
-            <th>可用</th>
-            <th>CPU</th>
-            <th>内存</th>
-            <th>查看</th>
-        </tr>
-        {% for h in hosts %}
-        <tr>
-            <td>{{ h.id }}</td>
-            <td>{{ h.name|e }}</td>
-            <td>{{ h.addr.split(':')[0] }}</td>
-            <td>{{ h.is_alive }}</td>
-            <td>{{ h.ncore }}</td>
-            <td>{{ h.mem|filesizeformat }}</td>
-            <td>
-                <a href='/deploy/hosts/{{ h.name|e }}/containers/' class="btn btn-default btn-xs"><span class="glyphicon glyphicon-th" aria-hidden="true"></span> 查看容器</a>
-            </td>
-        </tr>
-        {% endfor %}
-    </table>
+  <table class="table table-bordered table-striped">
+    <tr>
+      <th>ID</th>
+      <th>名字</th>
+      <th>主机地址</th>
+      <th>可用</th>
+      <th>CPU</th>
+      <th>内存</th>
+      <th>查看</th>
+    </tr>
+    {% for h in hosts %}
+    <tr>
+      <td>{{ h.id }}</td>
+      <td>{{ h.name }}</td>
+      <td>{{ h.addr.split(':')[0] }}</td>
+      <td>{{ h.is_alive }}</td>
+      <td>{{ h.ncore }}</td>
+      <td>{{ h.mem|filesizeformat }}</td>
+      <td>
+        <a href="{{ url_for('deploy.host_containers', host_name=h.name) }}" class="btn btn-default btn-xs">
+          <span class="glyphicon glyphicon-th" aria-hidden="true"></span> 查看容器
+        </a>
+      </td>
+    </tr>
+    {% endfor %}
+  </table>
 
-    {% include 'common/pagination.html' %}
+  {% include "common/pagination.html" %}
 </div>
 {% endblock %}

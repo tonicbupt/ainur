@@ -1,7 +1,8 @@
 # coding: utf-8
 
 import sqlalchemy.exc
-from clients import eru
+
+from libs.clients import eru
 from models.base import db, Base
 
 

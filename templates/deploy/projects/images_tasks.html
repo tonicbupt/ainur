@@ -1,49 +1,49 @@
-{% extends './deploy/base.html' %}
+{% extends "/deploy/base.html" %}
 
 {% block main_view %}
 <div class="panel panel-default content-margin-top">
-    <div class="panel-heading panel-heading02">
-        <ul class="breadcrumb">
-            <li><a href='/deploy/'>项目列表</a></li>
-            <li><a href='/deploy/projects/detail/{{ project_name|e }}'>{{ project_name|e }}</a></li>
-            <li class="active">任务列表</a></li></li>
-        </ul>
-    </div>
-    <table class="table table-bordered table-striped">
-        <tr>
-            <th class="col-xs-2">ID</th>
-            <th>动作</th>
-            <th>镜像版本</th>
-            <th>状态</th>
-            <th>开始时间</th>
-            <th>结束时间</th>
-        </tr>
+  <div class="panel-heading panel-heading02">
+    <ul class="breadcrumb">
+      <li><a href="{{ url_for('deploy.deploy') }}">项目列表</a></li>
+      <li><a href="{{ url_for('deploy.detail', name=name) }}">{{ name }}</a></li>
+      <li class="active">任务列表</li>
+    </ul>
+  </div>
+  <table class="table table-bordered table-striped">
+    <tr>
+      <th class="col-xs-2">ID</th>
+      <th>动作</th>
+      <th>镜像版本</th>
+      <th>状态</th>
+      <th>开始时间</th>
+      <th>结束时间</th>
+    </tr>
 
-        {%- for task in tasks %}
-        <tr>
-            <td>{{ task.id }}</td>
-            <td>{{ task.action }}</td>
-            <td>{{ task.version }}</td>
-            <td>
-                {% if task.result == 1 %}
-                成功
-                {% elif task.result == 2 %}
-                失败
-                {% else %}
-                {{ task.result|e }}
-                {% endif %}
-                <button style='float: right' data-toggle='modal' data-target='#task_log' data-id='{{ task.id }}' class='btn btn-default btn-xs btn-detail'>详细</button>
-            </td>
-            <td>{{ task.created }}</td>
-            <td>{{ task.finished if task.finished else '正在执行, 请稍等...' }}</td>
-        </tr>
-        {%- endfor %}
-    </table>
+    {%- for task in tasks %}
+    <tr>
+      <td>{{ task.id }}</td>
+      <td>{{ task.action }}</td>
+      <td>{{ task.version }}</td>
+      <td>
+        {% if task.result == 1 %}
+        成功
+        {% elif task.result == 2 %}
+        失败
+        {% else %}
+        {{ task.result }}
+        {% endif %}
+        <button style='float: right' data-toggle='modal' data-target='#task_log' data-id='{{ task.id }}' class='btn btn-default btn-xs btn-detail'>详细</button>
+      </td>
+      <td>{{ task.created }}</td>
+      <td>{{ task.finished if task.finished else '正在执行, 请稍等...' }}</td>
+    </tr>
+    {%- endfor %}
+  </table>
 
-    {% include 'common/pagination.html' %}
+  {% include "common/pagination.html" %}
 </div>
 
-{%- import 'common/modal.html' as modal %}
+{%- import "common/modal.html" as modal %}
 {{ modal.head('task_log', '任务详细日志') }}
 <pre>
     <div id='task_log_status' style='color: navy'></div>
@@ -57,35 +57,35 @@
 {% block page_js %}
 <script src='/static/js/flat-ui.js'></script>
 <script>
-$('#task_log').on('show.bs.modal', function(event) {
+  $('#task_log').on('show.bs.modal', function(event) {
     var status = $('#task_log_status').html('');
     var streams = $('#task_log_streams').html('');
     var errors = $('#task_log_errors').html('');
     $.get('/deploy/api/tasklog/' + $(event.relatedTarget).data('id'), {}, function(r) {
-        for (var i in r) {
-            var item = r[i];
-            if (item.status) {
-                status.append($('<div>').text(item.status));
-                continue;
-            }
-            if (item.stream) {
-                streams.append($('<div>').text(item.stream));
-                continue;
-            }
-            if (item.error) {
-                errors.append($('<div>').text(item.error));
-                continue;
-            }
+      for (var i in r) {
+        var item = r[i];
+        if (item.status) {
+          status.append($('<div>').text(item.status));
+          continue;
         }
+        if (item.stream) {
+          streams.append($('<div>').text(item.stream));
+          continue;
+        }
+        if (item.error) {
+          errors.append($('<div>').text(item.error));
+          continue;
+        }
+      }
     });
-});
+  });
 </script>
 {% endblock %}
 
 {% block page_css %}
 <style>
-.btn-detail {
+  .btn-detail {
     float: right;
-}
+  }
 </style>
 {% endblock %}

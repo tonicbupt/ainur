@@ -2,18 +2,18 @@
 
 from flask import render_template, Blueprint, request, g, abort
 
-from utils import json_api, forbid
-from models.base_image import BaseImage
+from libs.ext import rds
+from libs.utils import json_api
+from models.image import BaseImage
 from models.user import User
 from models.project import Project
 import models.user
-from .ext import rds
 
 bp = Blueprint('settings', __name__, url_prefix='/settings')
 
 
 @bp.route('/')
-def images():
+def index():
     return render_template('settings/base_images.html',
                            images=BaseImage.query.all())
 
@@ -39,8 +39,8 @@ def del_image():
 
 @bp.route('/users/')
 def list_users():
-    return render_template('settings/list_users.html',
-                           users=User.list(g.start, g.limit, User.uid.asc()))
+    users = User.get_all(g.start, g.limit)
+    return render_template('/settings/list_users.html', users=users)
 
 
 @bp.route('/users/<uid>/')

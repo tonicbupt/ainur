@@ -2,9 +2,13 @@ import os
 import logging
 import tempfile
 
-SERVER_PORT = int(os.getenv('SERVER_PORT', 5000))
-ERU_URL = os.getenv('ERU_URL', None)
 DEBUG = int(os.getenv('DEBUG', 0))
+SERVER_PORT = int(os.getenv('SERVER_PORT', 5000))
+SECRET = os.getenv('SECRET', 'ainur')
+
+MAX_CONTENT_LENGTH = 16 * 1024 * 1024
+
+ERU_URL = os.getenv('ERU_URL', None)
 PERMDIR = os.getenv('ERU_PERMDIR', tempfile.gettempdir())
 GITLAB_TOKEN = os.getenv('GITLAB_TOKEN', None)
 GITLAB_DOMAIN = os.getenv('GITLAB_DOMAIN', 'git.hunantv.com')
@@ -23,6 +27,8 @@ LOG_FILE = os.getenv('LOG_FILE', '')
 LOG_FORMAT = os.getenv('LOG_FORMAT', '%(levelname)s:%(asctime)s:%(message)s')
 
 APPNAME_ERU_LB = 'erulb'
+
+OPENID_PROFILE_URL = 'http://openids-web.intra.hunantv.com/oauth/profile/'
 
 try:
     from local_config import *
@@ -44,3 +50,4 @@ init_logging()
 
 SQLALCHEMY_DATABASE_URI = 'mysql://%s:%s@%s:%d/%s' % (
     MYSQL_USERNAME, MYSQL_PASSWORD, MYSQL_HOST, MYSQL_PORT, MYSQL_DATABASE)
+REDIS_URL = 'redis://%s:%d/0' % (REDIS_HOST, REDIS_PORT)
