@@ -97,7 +97,7 @@ def build_image(name):
         abort(404)
 
     revisions = _get_project_commits(project.git)
-    pods = eru.list_pods()
+    pods = eru.list_group_pods(g.user.group)
     base_images = BaseImage.list_all()
     return render_template(
         '/deploy/projects/build_image.html', project=project,
@@ -119,18 +119,12 @@ def env_detail(name, env_name):
             env_content=env_content, name=name, env_name=env_name)
 
 
-@bp.route('/projects/<name>/containers/')
+@bp.route('/project/<name>/containers/')
 def containers(name):
     containers = eru.list_app_containers(name)
     containers = containers['containers']
     return render_template('/deploy/projects/containers.html',
             containers=containers, name=name)
-
-
-def _get_user_group():
-    if not g.user:
-        return None
-    return 'platform'
 
 
 @bp.route('/projects/<name>/deploy/')
@@ -155,9 +149,9 @@ def pods_list():
 
 @bp.route('/pods/<pod_name>/hosts/')
 def pod_hosts(pod_name):
-    return render_template(
-        'deploy/pods/hosts.html', page=g.page, pod_name=pod_name,
-        hosts=eru.list_pod_hosts(pod_name, g.start, g.limit))
+    hosts = eru.list_pod_hosts(pod_name, g.start, g.limit)
+    return render_template('/deploy/pods/hosts.html', page=g.page,
+            pod_name=pod_name, hosts=hosts)
 
 
 @bp.route('/hosts/<host_name>/containers/')
@@ -166,11 +160,10 @@ def host_containers(host_name):
     if host is None:
         abort(404)
 
-    return render_template(
-        'deploy/pods/host_containers.html', page=g.page, host_name=host_name,
-        pod_name=eru.get_pod(host['pod_id'])['name'],
-        containers=eru.list_host_containers(
-            host_name, g.start, g.limit)['containers'])
+    pod_name=eru.get_pod(host['pod_id'])['name']
+    containers=eru.list_host_containers(host_name, g.start, g.limit)['containers']
+    return render_template('/deploy/pods/host_containers.html', host_name=host_name,
+            pod_name=pod_name, containers=containers)
 
 
 @bp.route('/api/groups')
@@ -224,6 +217,7 @@ def api_build_image():
 @bp.route('/api/revision/list_entrypoints', methods=['GET'])
 @json_api
 def revision_list_entrypoints():
+    print request.args
     project = _get_project(eru.get_app(request.args['project'])['git'])
     y = _get_rev_appyaml(project['id'], request.args['commit'])
     return y['entrypoints'].keys()
