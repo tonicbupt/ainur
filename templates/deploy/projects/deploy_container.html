@@ -124,7 +124,7 @@
 
 $('#select-version').change(function() {
   $.get('/deploy/api/revision/list_entrypoints', {
-    project: '{{ project_name|e }}',
+    project: '{{ name }}',
     commit: $(this).val()
   }, function(r) {
     var ep = $('#entrypoints').html('');

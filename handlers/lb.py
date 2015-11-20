@@ -9,7 +9,7 @@ from libs.clients import eru
 from libs.utils import demand_login, json_api
 from config import APPNAME_ERU_LB
 from models.oplog import OPLog
-from models.consts import OPLOG_ACTION, OPLOG_KIND
+from models.consts import OPLOG_ACTION, OPLOG_KIND, LB_IMAGE, LB_ENTRY_BETA, LB_ENV_BETA
 from models.balancer import Balancer, BalanceRecord
 
 bp = Blueprint('lb', __name__, url_prefix='/lb')
@@ -22,12 +22,12 @@ def index():
 
 
 @json_api
-def _create_lb_container(args):
-    if g.user.group is None:
+def _create_lb_container(pod, host):
+    if not g.user.group:
         raise ValueError('you are not in a group')
-    container_id = deploy_container(
-        g.user.group, args['pod'], args['entrypoint'], args['version'],
-        args['env'], args['host'])
+
+    version = LB_IMAGE.split(':')[1]
+    container_id = deploy_container(g.user.group, pod, LB_ENTRY_BETA, version, LB_ENV_BETA, host)
 
     container = eru.get_container(container_id)
     b = Balancer.create(container['host'], g.user.group, g.user.id, container_id)
@@ -35,7 +35,7 @@ def _create_lb_container(args):
     log = OPLog.create(g.user.id, OPLOG_ACTION.create_balancer)
     log.container_id = container_id
     log.balancer_id = b.id
-    log.data = args
+    log.data = {'host': host, 'pod': pod}
 
 
 @bp.route('/create', methods=['GET', 'POST'])
@@ -43,12 +43,15 @@ def create():
     if request.method == 'GET':
         images = eru.list_app_images(APPNAME_ERU_LB)
         image_names = [i['image_url'] for i in images]
-        return render_template(
-            '/lb/create.html', appname=APPNAME_ERU_LB, images=image_names,
-            envs=eru.list_app_env_names(APPNAME_ERU_LB)['data'],
-            pods=eru.list_pods())
+        print image_names
+        pods = eru.list_group_pods(g.user.group)
+        envs = eru.list_app_env_names(APPNAME_ERU_LB)['data']
+        return render_template('/lb/create.html', appname=APPNAME_ERU_LB,
+                images=image_names, envs=envs, pods=pods)
 
-    return _create_lb_container(request.form)
+    pod = request.form['pod']
+    host = request.form['host']
+    return _create_lb_container(pod, host)
 
 
 @bp.route('/<int:balancer_id>/records', methods=['GET', 'POST'])
