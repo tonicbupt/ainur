@@ -14,7 +14,7 @@
       <div class="form-group">
         <label for="input-ip" class="col-sm-1 control-label">机器组</label>
         <div class="col-sm-10">
-          <select name='pod' id='pod-select'>
+          <select name='pod' id='pod-select' class="form-control">
             {% for p in pods %}
             <option value='{{ p.name }}'>{{ p.name }}</option>
             {% endfor %}
@@ -25,7 +25,8 @@
       <div class="form-group">
         <label for="input-ip" class="col-sm-1 control-label">指定宿主机</label>
         <div class="col-sm-10">
-          <select name='host' id='host-select'></select>
+          <select name='host' id='host-select' class="form-control">
+          </select>
         </div>
       </div>
 
@@ -53,6 +54,7 @@
 
 function podSelected() {
   $.get('/deploy/api/pods/' + $('#pod-select').val() + '/list_hosts', {}, function(r) {
+    $('#host-select').html('');
     for (var i = 0; i < r.length; ++i) {
       $('#host-select').append($('<option>').val(r[i].name).text(r[i].addr + ' - ' + r[i].name));
     }

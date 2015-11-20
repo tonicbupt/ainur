@@ -22,7 +22,7 @@
       <div class="form-group">
         <label for="input-ip" class="col-sm-1 control-label">版本引用</label>
         <div class="col-sm-10">
-          <select name='revision'>
+          <select name='revision' class="form-control">
             {% for r in revisions %}
             <option value='{{ r.id }}'>{{ r.id[:7] }} - {{ r.message }}</option>
             {% endfor %}
@@ -33,7 +33,7 @@
       <div class="form-group">
         <label for="input-ip" class="col-sm-1 control-label">基础镜像</label>
         <div class="col-sm-10">
-          <select name='image'>
+          <select name='image' class="form-control">
             {% for i in base_images %}
             <option value='{{ i }}'>{{ i }}</option>
             {% endfor %}
@@ -44,7 +44,7 @@
       <div class="form-group">
         <label for="input-ip" class="col-sm-1 control-label">机器组</label>
         <div class="col-sm-10">
-          <select name='pod'>
+          <select name='pod' class="form-control">
             {% for p in pods %}
             <option value='{{ p.name }}'>{{ p.name }}</option>
             {% endfor %}
