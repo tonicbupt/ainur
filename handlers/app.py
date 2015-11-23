@@ -8,11 +8,13 @@ from libs.utils import paginator_kwargs, login_url
 from models.user import User
 
 blueprints = (
-    'index',
-    'user',
-    'deploy',
     'lb',
+    'user',
+    'index',
+    'deploy',
     'settings',
+    # ajax blueprints
+    'ajax.lb',
 )
 
 def create_app():
@@ -36,7 +38,7 @@ def create_app():
         g.start = request.args.get('start', type=int, default=g.page * 20)
         g.limit = request.args.get('limit', type=int, default=20)
 
-        if request.path == '/user/login_from_openid/':
+        if request.path == '/user/login_from_openid/' or request.path.startswith('/ajax'):
             return
 
         if 'uid' not in session:
