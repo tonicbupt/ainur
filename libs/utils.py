@@ -1,23 +1,19 @@
+# coding: utf-8
+
 import os
 import json
 import logging
 import calendar
 import urllib
-import urllib2
-import flask
-import werkzeug.exceptions
+import functools
 
-from cgi import parse_qs
 from eruhttp import EruException
 from datetime import datetime
-from functools import wraps
-from flask import request, Response, g
+from flask import Response, abort, send_file, g, request
 from urlparse import urlparse, urlunparse, ParseResult
 
 from config import GITLAB_DOMAIN
-
-# for redis expire
-SIX_MONTHS = 86400 * 30 * 6
+from models.base import Base
 
 
 def paginator_kwargs(kw):
@@ -25,10 +21,6 @@ def paginator_kwargs(kw):
     d.pop('start', None)
     d.pop('limit', None)
     return d
-
-
-def urlencode(text):
-    return urllib2.quote(text.encode('utf8'), safe='')
 
 
 def tojson(obj):
@@ -51,55 +43,19 @@ def strip_irregular_space(s):
     return s.replace('\t', '').replace('\r', '')
 
 
-def post_body():
-    return request.environ['body_copy']
-
-
-def post_body_text():
-    return unicode(strip_irregular_space(post_body()), 'utf-8')
-
-
-def post_json():
-    return json.loads(post_body_text())
-
-
-def post_form():
-    try:
-        return {k: unicode(strip_irregular_space(v[0]), 'utf-8')
-                for k, v in parse_qs(post_body()).iteritems()}
-    except (ValueError, TypeError, AttributeError, LookupError):
-        return {}
-
-
-def forbid():
-    raise werkzeug.exceptions.Forbidden()
-
-
-def unauthed():
-    raise werkzeug.exceptions.Unauthorized()
-
-
-def send_file(filename, mimetype=None):
-    return flask.send_file(filename, mimetype=mimetype, conditional=True)
-
-
 def send_template(module, templ):
     if '..' in templ or '/' == templ[0]:
-        return not_found()
+        abort(404)
     try:
-        return flask.send_file(os.path.join('templates', module, templ),
+        return send_file(os.path.join('templates', module, templ),
                                'text/html')
     except IOError:
-        return not_found()
-
-
-def not_found():
-    return flask.abort(404)
+        abort(404)
 
 
 def json_api(f):
-    @wraps(f)
-    def g(*args, **kwargs):
+    @functools.wraps(f)
+    def _(*args, **kwargs):
         try:
             return json_result(f(*args, **kwargs)) or ''
         except KeyError, e:
@@ -117,7 +73,7 @@ def json_api(f):
             return json_result(
                 {'reason': 'unexpected', 'msg': e.message}, 500)
         return json_result(r, 400)
-    return g
+    return _
 
 
 def parse_git_url(url):
@@ -134,10 +90,10 @@ def parse_git_url(url):
 
 
 def demand_login(f):
-    @wraps(f)
+    @functools.wraps(f)
     def h(*args, **kwargs):
-        if not flask.g.user:
-            return unauthed()
+        if not g.user:
+            abort(401)
         return f(*args, **kwargs)
     return h
 
@@ -146,6 +102,25 @@ def login_url():
     return urlunparse(ParseResult(
         'http', 'openids-web.intra.hunantv.com', '/oauth/login', None,
         urllib.urlencode({
-            'return_to': flask.request.host_url + 'user/login_from_openid/',
+            'return_to': request.host_url + 'user/login_from_openid/',
             'days': '14',
         }), None))
+
+
+class JSONEncoder(json.JSONEncoder):
+
+    def default(self, obj):
+        if isinstance(obj, Base):
+            return obj.to_dict()
+        if isinstance(obj, datetime):
+            return obj.strftime('%Y-%m-%d %H:%M:%S')
+        return super(JSONEncoder, self).default(obj)
+
+
+def jsonize(f):
+    @functools.wraps(f)
+    def _(*args, **kwargs):
+        r = f(*args, **kwargs)
+        code, data = r if isinstance(r, tuple) else (200, r)
+        return Response(json.dumps(data, cls=JSONEncoder), status=code, mimetype='application/json')
+    return _

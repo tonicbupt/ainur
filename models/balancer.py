@@ -2,25 +2,33 @@
 
 import json
 import requests
+import sqlalchemy.exc
 
-from base import db, Base
 from libs.clients import eru
+from models.base import db, Base
 
 
 class BalanceRecord(Base):
 
     __tablename__ = 'balancer_record'
+    __table_args = (
+        db.UniqueConstraint('balancer_id', 'appname', 'entrypoint'),
+    )
 
     appname = db.Column(db.String(255), index=True)
     entrypoint = db.Column(db.String(255), index=True)
     domain = db.Column(db.String(255))
-    balancer_id = db.Column(db.Integer, index=True)
+    balancer_id = db.Column(db.Integer)
 
     @classmethod
     def create(cls, appname, entrypoint, domain, balancer_id):
-        r = cls(appname=appname, entrypoint=entrypoint, domain=domain, balancer_id=balancer_id)
-        db.session.add(r)
-        db.session.commit()
+        try:
+            r = cls(appname=appname, entrypoint=entrypoint, domain=domain, balancer_id=balancer_id)
+            db.session.add(r)
+            db.session.commit()
+        except sqlalchemy.exc.IntegrityError:
+            db.session.rollback()
+            return None
 
         add_record_rules(r)
         return r
@@ -28,6 +36,10 @@ class BalanceRecord(Base):
     @classmethod
     def get_by_balancer_id(cls, balancer_id):
         return cls.query.filter_by(balancer_id=balancer_id).order_by(cls.id.desc()).all()
+
+    @classmethod
+    def get_by_appname_and_entrypoint(cls, appname, entrypoint):
+        return cls.query.filter_by(appname=appname, entrypoint=entrypoint).order_by(cls.id.desc()).all()
 
     @classmethod
     def delete_by_balancer_id(cls, balancer_id):
@@ -72,6 +84,9 @@ class Balancer(Base):
         self.user_id = user_id
         self.container_id = container_id
 
+    def __hash__(self):
+        return self.id
+
     @classmethod
     def create(cls, addr, group, user_id, container_id):
         b = cls(addr, group, user_id, container_id)
@@ -91,6 +106,10 @@ class Balancer(Base):
     def name(self):
         return self.container_id
 
+    @property
+    def lb_client(self):
+        return LBClient(self.addr)
+
     def add_record(self, appname, entrypoint, domain):
         """
         意思是说把这个appname的应用的entrypoint下面的所有后端,
@@ -106,6 +125,13 @@ class Balancer(Base):
         db.session.delete(self)
         db.session.commit()
 
+    def to_dict(self):
+        d = {}
+        d['user_id'] = self.user_id
+        d['group'] = self.group
+        d['lb_client'] = self.lb_client.to_dict()
+        return d
+
 
 class LBClient(object):
 
@@ -113,6 +139,8 @@ class LBClient(object):
         if not addr.startswith('http://'):
             addr = 'http://%s' % addr
         self.addr = addr
+        self.domain_addr = '%s/__erulb__/domain' % addr
+        self.upstream_addr = '%s/__erulb__/upstream' % addr
 
     def _get(self, url):
         resp = requests.get(url)
@@ -127,31 +155,33 @@ class LBClient(object):
         return resp.status_code == 200
 
     def get_domain(self):
-        return self._get('%s/__erulb__/domain' % self.addr)
+        return self._get(self.domain_addr)
 
     def update_domain(self, backend_name, domain):
         data = {'backend': backend_name, 'name': domain}
-        return self._put('%s/__erulb__/domain' % self.addr, data)
+        return self._put(self.domain_addr, data)
 
     def delete_domain(self, backend_name):
         data = {'backend': backend_name}
-        return self._delete('%s/__erulb__/domain' % self.addr, data)
+        return self._delete(self.domain_addr, data)
 
     def get_upstream(self):
-        return self._get('%s/__erulb__/upstream' % self.addr)
+        return self._get(self.upstream_addr)
 
     def update_upstream(self, backend_name, servers):
         data = {'backend': backend_name, 'servers': servers}
-        return self._put('%s/__erulb__/upstream' % self.addr, data)
+        return self._put(self.upstream_addr, data)
 
     def delete_upstream(self, backend_name):
         data = {'backend': backend_name}
-        return self._delete('%s/__erulb__/upstream' % self.addr, data)
+        return self._delete(self.upstream_addr, data)
+
+    def to_dict(self):
+        return {'domain_addr': self.domain_addr, 'upstream_addr': self.upstream_addr}
 
 
 def add_record_rules(record):
-    balancer = record.balancer
-    client = LBClient(balancer.addr)
+    client = record.balancer.lb_client
 
     # 1. 添加upstream
     # 现在还没加 weight
@@ -163,8 +193,7 @@ def add_record_rules(record):
 
 
 def delete_record_rules(record):
-    balancer = record.balancer
-    client = LBClient(balancer.addr)
+    client = record.balancer.lb_client
 
     # 1. 删除domain
     client.delete_domain(record.backend_name)

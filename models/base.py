@@ -26,6 +26,9 @@ class Base(db.Model):
         cls.query.filter_by(id=oid).delete()
         db.session.commit()
 
+    def to_dict(self):
+        return {}
+
 
 class PropsMixin(object):
     """丢redis里"""
