@@ -1,25 +1,29 @@
-{% extends './settings/base.html' %}
+{% extends "/settings/base.html" %}
 
 {% block main_view %}
 <div class="panel panel-default content-margin-top">
-    <table class="table table-bordered table-striped">
-        <tr>
-            <th>UID</th>
-            <th>名字</th>
-            <th>管理员</th>
-            <th>查看</th>
-        </tr>
-        {% for u in users %}
-        <tr>
-            <td>{{ u.uid|e }}</td>
-            <td>{{ u.realname|e }}</td>
-            <td>{{ '是' if u.is_admin else '否' }}</td>
-            <td>
-                <a href='/settings/users/{{ u.uid|e }}/' class="btn btn-default btn-xs"><span class="glyphicon glyphicon-list-alt" aria-hidden="true"></span> 详细</a>
-            </td>
-        </tr>
-        {% endfor %}
-    </table>
-    {% include 'common/pagination.html' %}
+  <table class="table table-bordered table-striped">
+    <tr>
+      <th>UID</th>
+      <th>名字</th>
+      <th>管理员</th>
+      <th>LB</th>
+      <th>查看</th>
+    </tr>
+    {% for u in users %}
+    <tr>
+      <td>{{ u.uid }}</td>
+      <td>{{ u.realname }}</td>
+      <td>{{ '是' if u.is_admin() else '否' }}</td>
+      <td>{{ '是' if u.is_lb_mgr() else '否' }}</td>
+      <td>
+        <a href="{{ url_for('settings.user_detail', uid=u.uid) }}" class="btn btn-default btn-xs">
+          <span class="glyphicon glyphicon-list-alt" aria-hidden="true"></span> 详细
+        </a>
+      </td>
+    </tr>
+    {% endfor %}
+  </table>
+  {% include "common/pagination.html" %}
 </div>
 {% endblock %}
