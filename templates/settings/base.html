@@ -1,25 +1,26 @@
-{% extends './base.html' %}
+{% extends "/base.html" %}
 
 {% block title %}设置{% endblock %}
 
 {% block body %}
 <nav class="navbar navbar-inverse navbar-fixed-top">
-    <div class=container-fluid>
-        <div class=navbar-header>
-            <button type=button class="navbar-toggle collapsed" data-toggle=collapse data-target=#navbar aria-expanded=false aria-controls=navbar>
-                <span class=sr-only>Toggle navigation</span> <span class=icon-bar></span> <span class=icon-bar></span>
-                <span class=icon-bar></span>
-            </button>
-            <a class=navbar-brand href='/'>Ainur</a>
-        </div>
-        <div id=navbar class="collapse navbar-collapse">
-            <ul class="nav navbar-nav">
-                <li><a href='/settings/'>基础镜像</a></li>
-                <li><a href='/settings/users/'>用户管理</a></li>
-            </ul>
-            {% include 'common/user.html' %}
-        </div>
+  <div class=container-fluid>
+    <div class=navbar-header>
+      <button type=button class="navbar-toggle collapsed" data-toggle=collapse data-target=#navbar aria-expanded=false aria-controls=navbar>
+        <span class=sr-only>Toggle navigation</span> <span class=icon-bar></span> <span class=icon-bar></span>
+        <span class=icon-bar></span>
+      </button>
+      <a class=navbar-brand href='/'>Ainur</a>
     </div>
+    <div id=navbar class="collapse navbar-collapse">
+      <ul class="nav navbar-nav">
+        <li><a href="{{ url_for('settings.index') }}">基础镜像</a></li>
+        <li><a href="{{ url_for('settings.users') }}">用户管理</a></li>
+        <li><a href="{{ url_for('settings.oplog') }}">操作日志</a></li>
+      </ul>
+      {% include 'common/user.html' %}
+    </div>
+  </div>
 </nav>
 <div class=container-fluid>{% block main_view %}{% endblock %}</div>
 {% endblock %}

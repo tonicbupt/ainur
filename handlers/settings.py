@@ -7,7 +7,7 @@ from models.image import BaseImage
 from models.user import User
 from models.project import Project
 from models.oplog import OPLog
-from models.consts import USER_ROLE, OPLOG_ACTION
+from models.consts import USER_ROLE, OPLOG_ACTION, OPLOG_KIND
 
 
 bp = Blueprint('settings', __name__, url_prefix='/settings')
@@ -32,9 +32,15 @@ def del_image():
 
 
 @bp.route('/users/')
-def list_users():
+def users():
     users = User.get_all(g.start, g.limit)
     return render_template('/settings/list_users.html', users=users)
+
+
+@bp.route('/oplog/')
+def oplog():
+    logs = OPLog.get_by_kind(OPLOG_KIND.admin)
+    return render_template('/settings/logs.html', logs=logs)
 
 
 @bp.route('/users/<uid>/')
