@@ -50,7 +50,7 @@ OPLOG_KIND_MAPPING = {
     OPLOG_ACTION.grant_privilege: OPLOG_KIND.admin,
 }
 
-LB_IMAGE = 'docker-registry.intra.hunantv.com/erulb:ed601f1'
+LB_IMAGE = 'docker-registry.intra.hunantv.com/erulb:2eaa783'
 LB_ENTRY_BETA = 'beta-host'
 LB_ENV_BETA = 'beta'
 LB_ENTRY_RELEASE = 'release-host'
