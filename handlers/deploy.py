@@ -301,6 +301,7 @@ def set_project_env():
         print e.message
     log = OPLog.create(g.user.id, OPLOG_ACTION.set_project_env)
     log.data = content
+    log.project_name = project
 
 
 @bp.route('/api/tasklog/<int:task_id>')

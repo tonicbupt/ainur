@@ -2,12 +2,13 @@
 
 from flask import render_template, Blueprint, request, g, abort
 
-from libs.ext import rds
 from libs.utils import json_api
 from models.image import BaseImage
 from models.user import User
 from models.project import Project
-import models.user
+from models.oplog import OPLog
+from models.consts import USER_ROLE, OPLOG_ACTION, OPLOG_KIND
+
 
 bp = Blueprint('settings', __name__, url_prefix='/settings')
 
@@ -18,29 +19,28 @@ def index():
                            images=BaseImage.query.all())
 
 
-def _reset_images_cache():
-    rds.delete('base_images')
-    rds.lpush('base_images', *[i.name for i in BaseImage.query.all()])
-
-
 @bp.route('/api/add_image', methods=['POST'])
 @json_api
 def add_image():
     BaseImage(name=request.form['name']).save()
-    _reset_images_cache()
 
 
 @bp.route('/api/del_image', methods=['POST'])
 @json_api
 def del_image():
     BaseImage.delete_by_id(int(request.form['id']))
-    _reset_images_cache()
 
 
 @bp.route('/users/')
-def list_users():
+def users():
     users = User.get_all(g.start, g.limit)
     return render_template('/settings/list_users.html', users=users)
+
+
+@bp.route('/oplog/')
+def oplog():
+    logs = OPLog.get_by_kind(OPLOG_KIND.admin)
+    return render_template('/settings/logs.html', logs=logs)
 
 
 @bp.route('/users/<uid>/')
@@ -64,6 +64,9 @@ def grant_project(uid):
         return {'reason': '项目不存在'}, 404
 
     user.grant_project(name)
+    log = OPLog.create(g.user.id, OPLOG_ACTION.grant_project)
+    log.project_name = name
+    log.acceptor = user.uid
 
 
 @bp.route('/api/users/setting', methods=['POST'])
@@ -72,13 +75,18 @@ def set_user():
     u = User.get_by_uid(request.form['uid'])
     if u is None:
         raise ValueError('no such user')
-    u.group = request.form['group']
-    u.priv_flags = reduce(
-        lambda x, y: x | y,
-        [getattr(models.user, 'PRIV_' + p.upper())
-         for p in request.form.getlist('privs')],
-        0)
-    u.save()
+
+    group = request.form['group']
+    if group:
+        u.set_group(group)
+
+    flags = request.form.getlist('privs')
+    privilege = reduce(lambda x, y: x | y, [getattr(USER_ROLE, p.lower(), 0) for p in flags], 0)
+    u.set_privilege(privilege)
+
+    log = OPLog.create(g.user.id, OPLOG_ACTION.grant_privilege)
+    log.privilege = privilege
+    log.acceptor = u.uid
 
 
 @bp.before_request

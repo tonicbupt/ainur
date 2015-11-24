@@ -1,0 +1,10 @@
+{% extends "/settings/base.html" %}
+{% import "/common/oplog.html" as oplog %}
+
+{% block main_view %}
+{{ oplog.show(logs) }}
+{% endblock %}
+
+{% block page_css %}
+<link rel="stylesheet" href="/static/css/jquery-ui.min.css">
+{% endblock %}
