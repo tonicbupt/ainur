@@ -1,6 +1,5 @@
 # coding: utf-8
 
-import os
 import json
 import logging
 import calendar
@@ -9,7 +8,7 @@ import functools
 
 from eruhttp import EruException
 from datetime import datetime
-from flask import Response, abort, send_file, g, request
+from flask import Response, abort, g, request
 from urlparse import urlparse, urlunparse, ParseResult
 
 from config import GITLAB_DOMAIN
@@ -37,20 +36,6 @@ def json_result(obj, status_code=200):
     r = Response(tojson(obj), mimetype='application/json')
     r.status_code = status_code
     return r
-
-
-def strip_irregular_space(s):
-    return s.replace('\t', '').replace('\r', '')
-
-
-def send_template(module, templ):
-    if '..' in templ or '/' == templ[0]:
-        abort(404)
-    try:
-        return send_file(os.path.join('templates', module, templ),
-                               'text/html')
-    except IOError:
-        abort(404)
 
 
 def json_api(f):

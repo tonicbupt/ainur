@@ -2,7 +2,26 @@
 
 from datetime import datetime
 from models.base import db, Base, PropsMixin, PropsItem
-from models.consts import OPLOG_KIND_MAPPING
+from models.consts import OPLOG_KIND_MAPPING, OPLOG_ACTION
+
+
+DESC_MAPPING = {
+    OPLOG_ACTION.create_project: '{self.user.uid}创建了项目{self.project_name}',
+    OPLOG_ACTION.set_project_env: '{self.user.uid}为项目{self.project_name}设置了环境变量',
+    OPLOG_ACTION.create_container: '{self.user.uid}创建了容器{self.container_id}',
+    OPLOG_ACTION.delete_container: '{self.user.uid}删除了容器{self.container_id}',
+    OPLOG_ACTION.stop_container: '{self.user.uid}停止了容器{self.container_id}',
+    OPLOG_ACTION.start_container: '{self.user.uid}启动了容器{self.container_id}',
+    OPLOG_ACTION.create_balancer: '{self.user.uid}创建了LB{self.balancer_id}',
+    OPLOG_ACTION.delete_balancer: '{self.user.uid}删除了LB{self.balancer_id}',
+    OPLOG_ACTION.create_lb_record: '{self.user.uid}创建了LB Record{self.record_id}',
+    OPLOG_ACTION.delete_lb_record: '{self.user.uid}删除了LB Record{self.record_id}',
+    OPLOG_ACTION.create_base_image: '{self.user.uid}创建了镜像{self.image}',
+    OPLOG_ACTION.delete_base_image: '{self.user.uid}删除了镜像{self.image}',
+    OPLOG_ACTION.grant_project: '{self.user.uid}给{self.acceptor}添加了项目{self.project_name}的权限',
+    OPLOG_ACTION.grant_privilege: '{self.user.uid}把{self.acceptor}的权限修改为{self.privilege}',
+    OPLOG_ACTION.build_image: '{self.user.uid}构建了镜像{self.image}',
+}
 
 
 class OPLog(Base, PropsMixin):
@@ -59,4 +78,5 @@ class OPLog(Base, PropsMixin):
 
     @property
     def description(self):
-        return ''
+        formatter = DESC_MAPPING.get(self.action, '')
+        return formatter.format(self=self)

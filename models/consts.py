@@ -55,3 +55,5 @@ LB_ENTRY_BETA = 'beta-host'
 LB_ENV_BETA = 'beta'
 LB_ENTRY_RELEASE = 'release-host'
 LB_ENV_RELEASE = 'release'
+
+USER_ROLE = namedtuple('UserRole', ['user', 'admin', 'lb'])(1, 2, 4)

@@ -1,10 +1,7 @@
 # coding: utf-8
 
-from base import db, Base
-
-PRIV_USER = 1
-PRIV_ADMIN = PRIV_USER << 1
-PRIV_LB = PRIV_ADMIN << 1
+from models.base import db, Base
+from models.consts import USER_ROLE
 
 
 class User(Base):
@@ -14,7 +11,7 @@ class User(Base):
     uid = db.Column(db.String(64), unique=True, nullable=False)
     group = db.Column(db.String(64))
     realname = db.Column(db.String(64), index=True, nullable=False)
-    priv_flags = db.Column(db.Integer, nullable=False, default=PRIV_USER)
+    priv_flags = db.Column(db.Integer, nullable=False, default=USER_ROLE.user)
 
     @classmethod
     def get_or_create(cls, uid, realname):
@@ -35,6 +32,16 @@ class User(Base):
         q = cls.query.order_by(cls.uid.desc())
         return q[start:start+limit]
 
+    def set_group(self, group):
+        self.group = group
+        db.session.add(self)
+        db.session.commit()
+
+    def set_privilege(self, privilege):
+        self.priv_flags = privilege
+        db.session.add(self)
+        db.session.commit()
+
     def get_accessible_projects(self, start=0, limit=20):
         from .project import ProjectUserMapping, Project
         names = ProjectUserMapping.get_name_by_user_id(self.id, start, limit)
@@ -45,7 +52,7 @@ class User(Base):
         ProjectUserMapping.add(name, self.id)
 
     def is_admin(self):
-        return self.priv_flags & PRIV_ADMIN
+        return self.priv_flags & USER_ROLE.admin
 
     def is_lb_mgr(self):
-        return self.priv_flags & PRIV_LB
+        return self.priv_flags & USER_ROLE.lb
