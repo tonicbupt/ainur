@@ -43,7 +43,6 @@ def create():
     if request.method == 'GET':
         images = eru.list_app_images(APPNAME_ERU_LB)
         image_names = [i['image_url'] for i in images]
-        print image_names
         pods = eru.list_group_pods(g.user.group)
         envs = eru.list_app_env_names(APPNAME_ERU_LB)['data']
         return render_template('/lb/create.html', appname=APPNAME_ERU_LB,
