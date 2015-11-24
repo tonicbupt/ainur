@@ -211,7 +211,8 @@ def api_build_image():
     eru.build_image(g.user.group, pod, app['name'], image, revision)
 
     log = OPLog.create(g.user.id, OPLOG_ACTION.build_image)
-    log.image = image
+    log.project_name = name
+    log.image = '%s:%s' % (name, revision)
 
 
 @bp.route('/api/revision/list_entrypoints', methods=['GET'])
@@ -247,13 +248,15 @@ def deploy_container_api():
     if project == APPNAME_ERU_LB:
         raise ValueError('Unable to deploy eru-lb, do it on load balance page')
 
+    version = form['version']
+
     eru.deploy_private(
         group_name=g.user.group,
         pod_name=form['pod'],
         app_name=project,
         ncore=form.get('ncore', type=float),
         ncontainer=form.get('ncontainer', type=int),
-        version=form['version'],
+        version=version,
         entrypoint=form['entrypoint'],
         env=form['env'],
         network_ids=form.getlist('network'),
@@ -261,7 +264,9 @@ def deploy_container_api():
         args=form['extendargs'].split(' '),
     )
 
-    OPLog.create(g.user.id, OPLOG_ACTION.create_container)
+    log = OPLog.create(g.user.id, OPLOG_ACTION.create_container)
+    log.project_name = project
+    log.image = '%s:%s' % (project, version)
 
 
 @bp.route('/api/containers', methods=['GET'])
