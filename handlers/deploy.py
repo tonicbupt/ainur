@@ -177,7 +177,7 @@ def deploy_groups():
 def api_register():
     repo_url = request.form['repo_url']
     app = _register_app(repo_url)
-    project_name = app['name']
+    project_name = app['appname']
 
     log = OPLog.create(g.user.id, OPLOG_ACTION.create_project)
     log.project_name = project_name
