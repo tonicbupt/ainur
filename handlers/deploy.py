@@ -320,6 +320,13 @@ def set_project_env():
     log.project_name = project
 
 
+@bp.route('/api/project/delete_env', methods=['POST'])
+@json_api
+def delete_project_env():
+    eru.delete_app_env(request.form['project'], request.form['env'])
+    return {'msg': 'ok'}
+
+
 @bp.route('/api/tasklog/<int:task_id>')
 @json_api
 def get_task_log(task_id):
