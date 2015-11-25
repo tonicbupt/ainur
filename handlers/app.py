@@ -23,6 +23,8 @@ def create_app():
     app.secret_key = app.config['SECRET']
 
     db.init_app(app)
+    db.app = app
+    db.create_all()
     rds.init_app(app)
 
     for bp in blueprints:

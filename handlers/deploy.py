@@ -1,7 +1,7 @@
 # coding: utf-8
 
 import yaml
-
+from functools import wraps
 from eruhttp import EruException
 from flask import render_template, Blueprint, request, g, abort
 
@@ -52,6 +52,15 @@ def _get_rev_appyaml(project_id, commit_id):
     return yaml.load(appyaml)
 
 
+def _request_group(f):
+    @wraps(f)
+    def h(*args, **kwargs):
+        if not (g.user and g.user.group):
+            return render_template('deploy/no_group.html')
+        return f(*args, **kwargs)
+    return h
+
+
 def _register_app(repo_url, commit_id=None):
     project = _get_project(repo_url)
     if commit_id is None:
@@ -91,6 +100,7 @@ def tasks(name):
 
 
 @bp.route('/project/<name>/build_image/')
+@_request_group
 def build_image(name):
     project = Project.get_by_name(name)
     if not project:
@@ -128,6 +138,7 @@ def containers(name):
 
 
 @bp.route('/projects/<name>/deploy/')
+@_request_group
 def deploy_container(name):
     images = eru.list_app_images(name)
     image_names = [i['image_url'] for i in images]
