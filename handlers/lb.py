@@ -5,12 +5,13 @@ from datetime import datetime
 from retrying import retry
 from flask import render_template, Blueprint, request, g, url_for, abort, redirect
 
+from config import APPNAME_ERU_LB
 from libs.clients import eru
 from libs.utils import demand_login, json_api
-from config import APPNAME_ERU_LB
+
 from models.oplog import OPLog
 from models.consts import OPLOG_ACTION, OPLOG_KIND, LB_IMAGE, LB_ENTRY_BETA, LB_ENV_BETA
-from models.balancer import Balancer, BalanceRecord
+from models.balancer import Balancer, BalanceRecord, add_record_analysis, delete_record_analysis
 
 bp = Blueprint('lb', __name__, url_prefix='/lb')
 
@@ -121,6 +122,11 @@ def record_analysis(record_id):
 
     if g.user.id != r.balancer.user_id:
         return {'msg': 'forbidden'}, 403
+
+    if request.method == 'PUT':
+        add_record_analysis(r)
+    elif request.method == 'DELETE':
+        delete_record_analysis(r)
 
     r.analysis_switch = request.method == 'PUT'
     return {'msg': 'ok'}
