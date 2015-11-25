@@ -229,7 +229,6 @@ def api_build_image():
 @bp.route('/api/revision/list_entrypoints', methods=['GET'])
 @json_api
 def revision_list_entrypoints():
-    print request.args
     project = _get_project(eru.get_app(request.args['project'])['git'])
     y = _get_rev_appyaml(project['id'], request.args['commit'])
     return y['entrypoints'].keys()
@@ -318,6 +317,13 @@ def set_project_env():
     log = OPLog.create(g.user.id, OPLOG_ACTION.set_project_env)
     log.data = content
     log.project_name = project
+
+
+@bp.route('/api/project/delete_env', methods=['POST'])
+@json_api
+def delete_project_env():
+    eru.delete_app_env(request.form['project'], request.form['env'])
+    return {'msg': 'ok'}
 
 
 @bp.route('/api/tasklog/<int:task_id>')

@@ -24,9 +24,18 @@
       <td>{{ r.entrypoint }}</td>
       <td>{{ r.domain }}</td>
       <td>
-        <button class="btn btn-danger btn-toggle-next btn-xs btn-delete" data-id="{{r.id}}">
+        <button class="btn btn-danger btn-toggle-next btn-xs btn-delete" data-id="{{ r.id }}">
           <i class="fa fa-trash">删除</i>
         </button>
+        {% if r.analysis_switch %}
+        <button class="btn btn-danger btn-xs btn-switch" data-id="{{ r.id }}" data-action="DELETE">
+          <i class="fa fa-trash">关闭数据统计</i>
+        </button>
+        {% else %}
+        <button class="btn btn-warning btn-xs btn-switch" data-id="{{ r.id }}" data-action="PUT">
+          <i class="fa fa-trash">打开数据统计</i>
+        </button>
+        {% endif %}
       </td>
     </tr>
     {% endfor %}
@@ -91,5 +100,30 @@ $('.btn-delete').click(function (){
     }
   });
 });
+
+$('.btn-switch').click(function (){
+  var self = $(this),
+      action = self.data('action');
+  if (action === 'DELETE' && !confirm('确认要关闭么?')) {
+    return;
+  }
+  var url = '/lb/api/record/' + self.data('id') + '/analysis';
+  $.ajax({
+    url: url,
+    type: self.data('action'),
+    success: function (){
+      if (action === 'PUT') {
+        self.data('action', 'DELETE');
+        self.removeClass('btn-warning').addClass('btn-danger');
+        self.find('i').html('关闭数据统计');
+      } else if (action === 'DELETE') {
+        self.data('action', 'PUT');
+        self.removeClass('btn-danger').addClass('btn-warning');
+        self.find('i').html('打开数据统计');
+      }
+    }
+  });
+});
+
 </script>
 {% endblock %}
