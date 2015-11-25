@@ -229,7 +229,6 @@ def api_build_image():
 @bp.route('/api/revision/list_entrypoints', methods=['GET'])
 @json_api
 def revision_list_entrypoints():
-    print request.args
     project = _get_project(eru.get_app(request.args['project'])['git'])
     y = _get_rev_appyaml(project['id'], request.args['commit'])
     return y['entrypoints'].keys()

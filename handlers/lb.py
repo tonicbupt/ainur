@@ -78,7 +78,6 @@ def records(balancer_id):
 
 @bp.route('/api/<int:balancer_id>', methods=['DELETE'])
 @json_api
-@demand_login
 def delete_balancer(balancer_id):
     balancer = Balancer.get(balancer_id)
     if not balancer:
@@ -97,7 +96,6 @@ def delete_balancer(balancer_id):
 
 @bp.route('/api/record/<int:record_id>', methods=['DELETE'])
 @json_api
-@demand_login
 def delete_record(record_id):
     r = BalanceRecord.get(record_id)
     if not r:
@@ -112,6 +110,20 @@ def delete_record(record_id):
     log.balancer_id = r.balancer_id
     log.record_id = record_id
     log.data = {'domain': r.domain, 'appname': r.appname, 'entrypoint': r.entrypoint}
+
+
+@bp.route('/api/record/<int:record_id>/analysis', methods=['PUT', 'DELETE'])
+@json_api
+def record_analysis(record_id):
+    r = BalanceRecord.get(record_id)
+    if not r:
+        return {'msg': 'not found'}, 404
+
+    if g.user.id != r.balancer.user_id:
+        return {'msg': 'forbidden'}, 403
+
+    r.analysis_switch = request.method == 'PUT'
+    return {'msg': 'ok'}
 
 
 @bp.route('/oplog/')

@@ -5,10 +5,10 @@ import requests
 import sqlalchemy.exc
 
 from libs.clients import eru
-from models.base import db, Base
+from models.base import db, Base, PropsMixin, PropsItem
 
 
-class BalanceRecord(Base):
+class BalanceRecord(Base, PropsMixin):
 
     __tablename__ = 'balancer_record'
     __table_args = (
@@ -19,6 +19,11 @@ class BalanceRecord(Base):
     entrypoint = db.Column(db.String(255), index=True)
     domain = db.Column(db.String(255))
     balancer_id = db.Column(db.Integer)
+
+    analysis_switch = PropsItem('analysis_switch', type=bool, default=False)
+
+    def get_uuid(self):
+        return '/ainur/balance_record/%s' % self.id
 
     @classmethod
     def create(cls, appname, entrypoint, domain, balancer_id):
@@ -141,6 +146,7 @@ class LBClient(object):
         self.addr = addr
         self.domain_addr = '%s/__erulb__/domain' % addr
         self.upstream_addr = '%s/__erulb__/upstream' % addr
+        self.analysis_addr = '%s/__erulb__/analysis' % addr
 
     def _get(self, url):
         resp = requests.get(url)
@@ -176,6 +182,19 @@ class LBClient(object):
         data = {'backend': backend_name}
         return self._delete(self.upstream_addr, data)
 
+    def add_analysis(self, domain):
+        if not isinstance(domain, list):
+            domain = [domain]
+        data = {'hosts': domain}
+        return self._put(self.analysis_addr, data)
+
+    def delete_analysis(self, domain):
+        data = {'host': domain}
+        return self._delete(self.analysis_addr, data)
+
+    def get_analysis(self):
+        return self._get(self.analysis_addr)
+
     def to_dict(self):
         return {'domain_addr': self.domain_addr, 'upstream_addr': self.upstream_addr}
 
@@ -200,3 +219,13 @@ def delete_record_rules(record):
 
     # 2. 删除upstream
     client.delete_upstream(record.backend_name)
+
+
+def add_record_analysis(record):
+    client = record.balancer.lb_client
+    client.add_analysis(record.domain)
+
+
+def delete_record_analysis(record):
+    client = record.balancer.lb_client
+    client.delete_analysis(record.domain)
