@@ -13,6 +13,9 @@ class User(Base):
     realname = db.Column(db.String(64), index=True, nullable=False)
     priv_flags = db.Column(db.Integer, nullable=False, default=USER_ROLE.user)
 
+    def __hash__(self):
+        return self.id
+
     @classmethod
     def get_or_create(cls, uid, realname):
         u = cls.get_by_uid(uid)

@@ -33,6 +33,9 @@ class Project(object):
         user_id = ProjectUserMapping.get_user_id_by_name(self.name)
         return User.get_multi(user_id)
 
+    def is_accessible(self, user):
+        return user and (user.is_admin() or user.is_lb_mgr() or user in self.get_accessible_users())
+
 
 class ProjectUserMapping(Base):
 
