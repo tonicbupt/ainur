@@ -213,6 +213,10 @@ def api_build_image():
     name = request.form['project']
     app = eru.get_app(name)
 
+    p = Project.get_by_name(name)
+    if not p.is_accessible(g.user):
+        return {'reason': '你没有操作这个项目的权限'}, 403
+
     revision = request.form['revision']
     _register_app(app['git'], revision)
     _get_project(app['git'])
@@ -258,6 +262,10 @@ def deploy_container_api():
     if project == APPNAME_ERU_LB:
         raise ValueError('Unable to deploy eru-lb, do it on load balance page')
 
+    p = Project.get_by_name(project)
+    if not p.is_accessible(g.user):
+        return {'reason': '你没有操作这个项目的权限'}, 403
+
     version = form['version']
 
     eru.deploy_private(
@@ -300,6 +308,10 @@ def set_project_env():
     env = form['env']
     content = {}
 
+    p = Project.get_by_name(project)
+    if not p.is_accessible(g.user):
+        return {'reason': '你没有操作这个项目的权限'}, 403
+
     for line, i in enumerate(form['content'].split('\n')):
         if not i.strip():
             continue
@@ -322,7 +334,12 @@ def set_project_env():
 @bp.route('/api/project/delete_env', methods=['POST'])
 @json_api
 def delete_project_env():
-    eru.delete_app_env(request.form['project'], request.form['env'])
+    name = request.form['project']
+    p = Project.get_by_name(name)
+    if not p.is_accessible(g.user):
+        return {'reason': '你没有操作这个项目的权限'}, 403
+
+    eru.delete_app_env(name, request.form['env'])
     return {'msg': 'ok'}
 
 
@@ -336,8 +353,13 @@ def get_task_log(task_id):
 @json_api
 def stop_container():
     cid = request.form['id']
-    if eru.get_container(cid)['appname'] == APPNAME_ERU_LB:
+    name = eru.get_container(cid)['appname']
+    if name == APPNAME_ERU_LB:
         raise ValueError('Unable to stop eru-lb, do it on load balance page')
+
+    p = Project.get_by_name(name)
+    if not p.is_accessible(g.user):
+        return {'reason': '你没有操作这个项目的权限'}, 403
 
     eru.stop_container(cid)
     log = OPLog.create(g.user.id, OPLOG_ACTION.stop_container)
@@ -348,6 +370,12 @@ def stop_container():
 @json_api
 def start_container():
     cid = request.form['id']
+    name = eru.get_container(cid)['appname']
+
+    p = Project.get_by_name(name)
+    if not p.is_accessible(g.user):
+        return {'reason': '你没有操作这个项目的权限'}, 403
+
     eru.start_container(cid)
 
     log = OPLog.create(g.user.id, OPLOG_ACTION.start_container)
@@ -358,8 +386,13 @@ def start_container():
 @json_api
 def rm_container():
     cid = request.form['id']
-    if eru.get_container(cid)['appname'] == APPNAME_ERU_LB:
+    name = eru.get_container(cid)['appname']
+    if name == APPNAME_ERU_LB:
         raise ValueError('Unable to remove eru-lb, do it on load balance page')
+
+    p = Project.get_by_name(name)
+    if not p.is_accessible(g.user):
+        return {'reason': '你没有操作这个项目的权限'}, 403
 
     eru.remove_containers([cid])
 
