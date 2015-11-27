@@ -349,6 +349,12 @@ def get_task_log(task_id):
     return eru.get_task_log(task_id)
 
 
+@bp.route('/api/host/<hostname>')
+@json_api
+def get_host_info(hostname):
+    return eru.get_host(hostname)
+
+
 @bp.route('/api/containers/stop', methods=['POST'])
 @json_api
 def stop_container():

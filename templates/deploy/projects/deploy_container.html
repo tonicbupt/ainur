@@ -89,7 +89,7 @@
       <div class="form-group">
         <label for="input-ip" class="col-sm-1 control-label">独占 CPU 个数</label>
         <div class="col-sm-10">
-          <input type="text" name='ncore' class="form-control" value='1'>
+          <input class="form-control" type="text" name="ncore" data-slider-id="slider" data-slider-min="1" data-slider-max="24" data-slider-step="1" data-slider-value="1">
         </div>
       </div>
 
@@ -115,12 +115,24 @@
 </div>
 {% endblock %}
 
+{% block page_css %}
+<link rel="stylesheet" href="/static/css/bootstrap-slider.css" media="all">
+<style>
+  div.slider {width:100% !important;}
+</style>
+{% endblock %}
+
 {% block page_js %}
 <script src='/static/js/deploy/submit.js'></script>
+<script src='/static/js/bootstrap-slider.js'></script>
 <script>
-  $('#deployContainer')[0].success = function() {
-    window.location = '/deploy/project/{{ name }}/containers/';
-  }
+$('input[name=ncore]').slider({
+  tooltip: 'always'
+});
+
+$('#deployContainer')[0].success = function() {
+  window.location = '/deploy/project/{{ name }}/containers/';
+}
 
 $('#select-version').change(function() {
   $.get('/deploy/api/revision/list_entrypoints', {
@@ -145,5 +157,20 @@ function podSelected() {
 
 podSelected();
 $('#pod-select').change(podSelected);
+
+$('#host-select').change(function (){
+  var v = $(this).val();
+  if (v === '') {
+    return;
+  }
+  $.get('/deploy/api/host/' + v, {}, function(r){
+    $('#slider').slider({
+      max: r.count,
+      min: 1,
+      tooltip: 'always',
+      value: 1,
+    }).slider('refresh');
+  });
+});
 </script>
 {% endblock %}
