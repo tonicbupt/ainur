@@ -30,7 +30,8 @@ def _create_lb_container(pod, host):
     version = LB_IMAGE.split(':')[1]
     env = request.form['type']
     entry = '%s-host' % env
-    container_id = deploy_container(g.user.group, pod, entry, version, env, host)
+    ncore = request.form.get('ncore', type=int, default=1)
+    container_id = deploy_container(g.user.group, pod, entry, version, env, host, ncore)
 
     container = eru.get_container(container_id)
     b = Balancer.create(container['host'], g.user.group, g.user.id, container_id)
@@ -165,12 +166,12 @@ def poll_task_for_container_id(task_id):
                          (task_id, r))
 
 
-def deploy_container(group, pod, entrypoint, version, env, host):
+def deploy_container(group, pod, entrypoint, version, env, host, ncore):
     r = eru.deploy_private(
         group_name=group,
         pod_name=pod,
         app_name=APPNAME_ERU_LB,
-        ncore=1.0,
+        ncore=ncore,
         ncontainer=1,
         version=version,
         entrypoint=entrypoint,
