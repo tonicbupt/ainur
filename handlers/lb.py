@@ -18,7 +18,7 @@ bp = Blueprint('lb', __name__, url_prefix='/lb')
 
 @bp.route('/')
 def index():
-    balancers = Balancer.get_by_user(g.user.id)
+    balancers = Balancer.get_by_group(g.user.group)
     return render_template('lb/index.html', balancers=balancers)
 
 
