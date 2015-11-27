@@ -10,7 +10,7 @@ from libs.clients import eru
 from libs.utils import demand_login, json_api
 
 from models.oplog import OPLog
-from models.consts import OPLOG_ACTION, OPLOG_KIND, LB_IMAGE, LB_ENTRY_BETA, LB_ENV_BETA
+from models.consts import OPLOG_ACTION, OPLOG_KIND, LB_IMAGE
 from models.balancer import Balancer, BalanceRecord, add_record_analysis, delete_record_analysis
 
 bp = Blueprint('lb', __name__, url_prefix='/lb')
@@ -28,7 +28,9 @@ def _create_lb_container(pod, host):
         raise ValueError('you are not in a group')
 
     version = LB_IMAGE.split(':')[1]
-    container_id = deploy_container(g.user.group, pod, LB_ENTRY_BETA, version, LB_ENV_BETA, host)
+    env = request.form['type']
+    entry = '%s-host' % env
+    container_id = deploy_container(g.user.group, pod, entry, version, env, host)
 
     container = eru.get_container(container_id)
     b = Balancer.create(container['host'], g.user.group, g.user.id, container_id)
