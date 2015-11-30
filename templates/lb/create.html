@@ -25,7 +25,7 @@
       <div class="form-group">
         <label for="input-ip" class="col-sm-1 control-label">指定宿主机</label>
         <div class="col-sm-10">
-          <select name='host' id='host-select' class="form-control">
+          <select name="host" id="host-select" class="form-control">
           </select>
         </div>
       </div>
@@ -44,7 +44,7 @@
       <div class="form-group">
         <label for="input-ip" class="col-sm-1 control-label">CPU Core</label>
         <div class="col-sm-10">
-          <input type="number" value="1" name="ncore" class="form-control">
+          <input type="number" value="1" name="ncore" class="form-control" data-slider-id="slider" data-slider-min="1" data-slider-max="24" data-slider-step="1" data-slider-value="1">
         </div>
       </div>
 
@@ -63,12 +63,36 @@
 </div>
 {% endblock %}
 
+{% block page_css %}
+<link rel="stylesheet" href="/static/css/bootstrap-slider.css">
+<style>
+  div.slider {width: 100% !important;}
+</style>
+{% endblock %}
+
 {% block page_js %}
 <script src='/static/js/deploy/submit.js'></script>
+<script src="/static/js/bootstrap-slider.js"></script>
 <script>
-  $('#deploy')[0].success = function() {
-    window.location = '/lb/';
-  }
+
+  $('input[name=ncore]').slider({
+    tooltip: 'always'
+  });
+
+$('#deploy')[0].success = function() {
+  window.location = '/lb/';
+}
+
+function setCPUCore(hostname) {
+  $.get('/deploy/api/host/' + hostname, {}, function(r){
+    $('#slider').slider({
+      max: r.count,
+      min: 1,
+      tooltip: 'always',
+      value: 1,
+    }).slider('refresh');
+  });
+}
 
 function podSelected() {
   $.get('/deploy/api/pods/' + $('#pod-select').val() + '/list_hosts', {}, function(r) {
@@ -76,10 +100,29 @@ function podSelected() {
     for (var i = 0; i < r.length; ++i) {
       $('#host-select').append($('<option>').val(r[i].name).text(r[i].addr + ' - ' + r[i].name));
     }
-  });
+
+    var options = $('#host-select option');
+    if (options.length === 0) {
+      return;
+    }
+    var v = options[0].value;
+    if (!v) {
+      return;
+    }
+    setCPUCore(v);
+    });
 }
 
 podSelected();
 $('#pod-select').change(podSelected);
+
+$('#host-select').change(function (){
+  var v = $(this).val();
+  if (v === '') {
+    return;
+  }
+  setCPUCore(v)
+});
+
 </script>
 {% endblock %}
