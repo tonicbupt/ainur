@@ -89,7 +89,12 @@
       <div class="form-group">
         <label for="input-ip" class="col-sm-1 control-label">独占 CPU 个数</label>
         <div class="col-sm-10">
-          <input class="form-control" type="text" name="ncore" data-slider-id="slider" data-slider-min="1" data-slider-max="24" data-slider-step="1" data-slider-value="1">
+          <input data-slider-id="slider"
+          data-slider-min="0.1" 
+          data-slider-max="24" 
+          data-slider-step="0.1" 
+          data-slider-value="0.1" 
+          class="form-control" type="text" name="ncore" >
         </div>
       </div>
 
@@ -166,9 +171,10 @@ $('#host-select').change(function (){
   $.get('/deploy/api/host/' + v, {}, function(r){
     $('#slider').slider({
       max: r.count,
-      min: 1,
+      min: 0.1,
       tooltip: 'always',
-      value: 1,
+      value: 0.1,
+      step: 0.1,
     }).slider('refresh');
   });
 });
