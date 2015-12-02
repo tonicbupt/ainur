@@ -30,7 +30,7 @@ def _create_lb_container(pod, host):
     version = LB_IMAGE.split(':')[1]
     env = request.form['type']
     entry = '%s-host' % env
-    ncore = request.form.get('ncore', type=int, default=1)
+    ncore = request.form.get('ncore', type=float, default=1)
     container_id = deploy_container(g.user.group, pod, entry, version, env, host, ncore)
 
     container = eru.get_container(container_id)
