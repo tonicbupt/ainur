@@ -167,8 +167,8 @@ class LBClient(object):
         data = {'backend': backend_name, 'name': domain}
         return self._put(self.domain_addr, data)
 
-    def delete_domain(self, backend_name):
-        data = {'backend': backend_name}
+    def delete_domain(self, domain):
+        data = {'name': domain}
         return self._delete(self.domain_addr, data)
 
     def get_upstream(self):
