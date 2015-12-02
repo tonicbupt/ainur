@@ -14,6 +14,7 @@
   <tr>
     <th>#</th>
     <th>容器 ID</th>
+    <th>地址</th>
     <th>路由</th>
     <th>操作</th>
   </tr>
@@ -21,6 +22,7 @@
   <tr>
     <td>{{ b.id }}</td>
     <td>{{ b.container_id[:11] }}</td>
+    <td>{{ b.addr }}</td>
     <td>
       {% for r in b.get_records() %}
       <p>{{ r.domain }} --> {{ r.appname }}:{{ r.entrypoint }}</p>
