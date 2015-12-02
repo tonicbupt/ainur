@@ -169,13 +169,12 @@ $('#host-select').change(function (){
     return;
   }
   $.get('/deploy/api/host/' + v, {}, function(r){
-    $('#slider').slider({
+    $('input[name=ncore]').slider({
       max: r.count,
       min: 0.1,
       tooltip: 'always',
-      value: 0.1,
       step: 0.1,
-    }).slider('refresh');
+    });
   });
 });
 </script>
