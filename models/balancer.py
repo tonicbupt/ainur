@@ -7,6 +7,15 @@ import sqlalchemy.exc
 from libs.clients import eru
 from models.base import db, Base, PropsMixin, PropsItem
 
+def get_app_backends(appname, entrypoint):
+    backends = []
+    containers = eru.list_app_containers(appname, limit=100)
+    for container in containers['containers']:
+        if container['entrypoint'] != entrypoint:
+            continue
+        backends.extend(container['backends'])
+    return backends
+
 
 class BalanceRecord(Base, PropsMixin):
 
@@ -27,6 +36,10 @@ class BalanceRecord(Base, PropsMixin):
 
     @classmethod
     def create(cls, appname, entrypoint, domain, balancer_id):
+        backends = get_app_backends(appname, entrypoint)
+        if not backends:
+            return
+
         try:
             r = cls(appname=appname, entrypoint=entrypoint, domain=domain, balancer_id=balancer_id)
             db.session.add(r)
@@ -60,13 +73,7 @@ class BalanceRecord(Base, PropsMixin):
         return Balancer.get(self.balancer_id)
 
     def get_backends(self):
-        backends = []
-        containers = eru.list_app_containers(self.appname, limit=100)
-        for container in containers['containers']:
-            if container['entrypoint'] != self.entrypoint:
-                continue
-            backends.extend(container['backends'])
-        return backends
+        return get_app_backends(self.appname, self.entrypoint)
 
     def delete(self):
         delete_record_rules(self)
@@ -204,7 +211,11 @@ def add_record_rules(record):
 
     # 1. 添加upstream
     # 现在还没加 weight
+    # 但是如果没有后端就算了, 也不添加domain了
     servers = ['server %s;' % b for b in record.get_backends()]
+    if not servers:
+        return
+
     client.update_upstream(record.backend_name, servers)
 
     # 2. 添加domain
@@ -215,7 +226,7 @@ def delete_record_rules(record):
     client = record.balancer.lb_client
 
     # 1. 删除domain
-    client.delete_domain(record.backend_name)
+    client.delete_domain(record.domain)
 
     # 2. 删除upstream
     client.delete_upstream(record.backend_name)

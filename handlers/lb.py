@@ -71,11 +71,11 @@ def records(balancer_id):
     entrypoint = request.form['entrypoint']
 
     r = balancer.add_record(appname, entrypoint, domain)
-
-    log = OPLog.create(g.user.id, OPLOG_ACTION.create_lb_record)
-    log.balancer_id = balancer_id
-    log.record_id = r.id
-    log.data = {'domain': domain, 'appname': appname, 'entrypoint': entrypoint}
+    if r:
+        log = OPLog.create(g.user.id, OPLOG_ACTION.create_lb_record)
+        log.balancer_id = balancer_id
+        log.record_id = r.id
+        log.data = {'domain': domain, 'appname': appname, 'entrypoint': entrypoint}
 
     return redirect(url_for('lb.records', balancer_id=balancer_id))
 
