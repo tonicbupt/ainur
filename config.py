@@ -26,6 +26,10 @@ LOG_LEVEL = getattr(logging, os.getenv('LOG_LEVEL', 'info').upper())
 LOG_FILE = os.getenv('LOG_FILE', '')
 LOG_FORMAT = os.getenv('LOG_FORMAT', '%(levelname)s:%(asctime)s:%(message)s')
 
+SQLALCHEMY_POOL_SIZE = int(os.getenv('SQLALCHEMY_POOL_SIZE', '100'))
+SQLALCHEMY_POOL_TIMEOUT = int(os.getenv('SQLALCHEMY_POOL_TIMEOUT', '3600'))
+SQLALCHEMY_POOL_RECYCLE = int(os.getenv('SQLALCHEMY_POOL_RECYCLE', '2000'))
+
 APPNAME_ERU_LB = 'erulb'
 
 OPENID_PROFILE_URL = 'http://openids-web.intra.hunantv.com/oauth/profile/'
@@ -49,5 +53,5 @@ def init_logging():
 init_logging()
 
 SQLALCHEMY_DATABASE_URI = 'mysql://%s:%s@%s:%d/%s' % (
-    MYSQL_USERNAME, MYSQL_PASSWORD, MYSQL_HOST, MYSQL_PORT, MYSQL_DATABASE)
+        MYSQL_USERNAME, MYSQL_PASSWORD, MYSQL_HOST, MYSQL_PORT, MYSQL_DATABASE)
 REDIS_URL = 'redis://%s:%d/0' % (REDIS_HOST, REDIS_PORT)
