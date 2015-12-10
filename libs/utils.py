@@ -84,7 +84,8 @@ def demand_login(f):
 
 
 def login_url():
-    return OPENID_LOGIN_URL % urllib.quote(request.host_url + 'user/login_from_openid/', safe='')
+    url = urllib.quote(request.host_url + 'user/login_from_openid/', safe='')
+    return OPENID_LOGIN_URL % (url, request.host_url)
 
 
 class JSONEncoder(json.JSONEncoder):
