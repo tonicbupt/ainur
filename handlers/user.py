@@ -25,6 +25,11 @@ def login_from_openid():
     r = requests.get(OPENID_PROFILE_URL, params={'token': request.args['token']})
     user_info = r.json()
 
-    user = User.get_or_create(user_info['uid'], user_info['realname'])
+    uid = user_info.get('uid', '') or user_info.get('name', '')
+    if not uid:
+        return redirect('/')
+
+    realname = user_info.get('realname', '')
+    user = User.get_or_create(uid, realname)
     session['uid'] = user.uid
     return redirect('/')
