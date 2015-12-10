@@ -9,9 +9,9 @@ import functools
 from eruhttp import EruException
 from datetime import datetime
 from flask import Response, abort, g, request
-from urlparse import urlparse, urlunparse, ParseResult
+from urlparse import urlparse
 
-from config import GITLAB_DOMAIN
+from config import GITLAB_DOMAIN, OPENID_LOGIN_URL
 from models.base import Base
 
 
@@ -84,12 +84,7 @@ def demand_login(f):
 
 
 def login_url():
-    return urlunparse(ParseResult(
-        'http', 'openids-web.intra.hunantv.com', '/oauth/login', None,
-        urllib.urlencode({
-            'return_to': request.host_url + 'user/login_from_openid/',
-            'days': '14',
-        }), None))
+    return OPENID_LOGIN_URL % urllib.quote(request.host_url + 'user/login_from_openid/', safe='')
 
 
 class JSONEncoder(json.JSONEncoder):

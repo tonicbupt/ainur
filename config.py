@@ -32,6 +32,7 @@ SQLALCHEMY_POOL_RECYCLE = int(os.getenv('SQLALCHEMY_POOL_RECYCLE', '2000'))
 
 APPNAME_ERU_LB = 'erulb'
 
+OPENID_LOGIN_URL = 'http://openids-web.intra.hunantv.com/oauth/login?return_to=%s'
 OPENID_PROFILE_URL = 'http://openids-web.intra.hunantv.com/oauth/profile/'
 
 try:
