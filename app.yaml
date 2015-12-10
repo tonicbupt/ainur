@@ -4,4 +4,9 @@ entrypoints:
         cmd: "python web.py"
         ports:
             - "5000/tcp"
+    web-host:
+        cmd: "python web.py"
+        ports:
+            - "5000/tcp"
+        network_mode: "host"
 build: "pip install -r req.txt"
